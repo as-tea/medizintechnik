@@ -20,14 +20,24 @@ def spo2_applet():
     # Layout für die beiden Graphen nebeneinander
     col1, col2 = st.columns(2)
 
-    # --- MATHEMATISCHE MODELLIERUNG DER ABSORPTIONSKURVEN ---
-    # Wir approximieren die echten Absorptionsverläufe für den didaktischen Zweck
+    # --- ENGE MATHEMATISCHE ANPASSUNG AN DIE REALE GRAFIK ---
     wellenlaengen = np.linspace(600, 1000, 400)
     
-    # Modellierung Hb (Desoxygeniert): Absorbiert stark bei Rot (660), fällt danach stark ab
-    abs_hb = 5.0 * np.exp(-((wellenlaengen - 620) / 80)**2) + 0.2
-    # Modellierung HbO2 (Oxygeniert): Absorbiert schwach bei Rot, steigt bei IR (940) leicht an im Verhältnis zu Hb
-    abs_hbo2 = 0.3 * np.exp(-((wellenlaengen - 640) / 50)**2) + 1.2 * np.exp(-((wellenlaengen - 920) / 150)**2) + 0.1
+    # Modellierung Hb (Blau): Fällt steil ab, hat einen lokalen Peak bei 760nm, flacht ab und stürzt ab 930nm ab
+    abs_hb = (
+        8.0 * np.exp(-((wellenlaengen - 550) / 70)**2) +  # Steiler Abfall von links
+        0.8 * np.exp(-((wellenlaengen - 758) / 20)**2) +  # Der charakteristische Peak bei ~760 nm
+        0.6 * (wellenlaengen >= 700) * (wellenlaengen <= 930) * (1 - 0.2 * ((wellenlaengen - 830)/100)**2) + # Flaches Plateau
+        0.6 * np.exp(-((wellenlaengen - 920) / 40)**2) * (wellenlaengen > 920) # Steiler Abfall am Ende bei 1000nm
+    )
+    # Korrektur für glatten Übergang
+    abs_hb = np.where(wellenlaengen > 930, abs_hb * np.exp(-((wellenlaengen - 930) / 40)**2), abs_hb) + 0.15
+
+    # Modellierung HbO2 (Rot): Minimum bei ca. 690nm, steigt dann stetig an, Plateau bei 900-940nm, fällt leicht ab
+    abs_hbo2 = (
+        0.3 * np.exp(-((wellenlaengen - 600) / 40)**2) + # Abfall zu Beginn
+        1.2 * np.exp(-((wellenlaengen - 920) / 120)**2)  # Breiter Buckel im Infrarotbereich
+    ) + 0.25
 
     # Die aktuelle Gesamtabsorption ist die gewichtete Mischung basierend auf SpO2
     fraktion_hbo2 = spo2 / 100.0
@@ -46,14 +56,14 @@ def spo2_applet():
         
         fig_spec = go.Figure()
         
-        # Basis-Kurven (Hb und HbO2)
-        fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_hb, mode='lines', name='Deoxygeniertes Hb', line=dict(color='#1976D2', width=1.5, dash='dot')))
-        fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_hbo2, mode='lines', name='Oxygeniertes HbO₂', line=dict(color='#D32F2F', width=1.5, dash='dot')))
+        # Basis-Kurven (Hb und HbO2) getreu deiner Grafik
+        fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_hb, mode='lines', name='Deoxygeniertes Hb', line=dict(color='#1976D2', width=2)))
+        fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_hbo2, mode='lines', name='Oxygeniertes HbO₂', line=dict(color='#D32F2F', width=2)))
         
         # Dynamische Gesamtabsorptionskurve
         fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_gesamt, mode='lines', name='Gesamt-Blutabsorption', line=dict(color='#2E7D32', width=3)))
         
-        # Vertikale Parallelen bei den Wellenlängen des Sensors
+        # Vertikale Parallelen bei den Wellenlängen des echten Sensors
         fig_spec.add_vline(x=660, line_width=2, line_dash="dash", line_color="red")
         fig_spec.add_vline(x=940, line_width=2, line_dash="dash", line_color="purple")
         
@@ -63,9 +73,9 @@ def spo2_applet():
         
         fig_spec.update_layout(
             xaxis_title="Wellenlänge (nm)",
-            yaxis_title="Absorptionskoeffizient (willkürliche Einheiten)",
+            yaxis_title="Molarer Extinktionskoeffizient",
             xaxis=dict(range=[600, 1000]),
-            yaxis=dict(range=[0, 5.5]),
+            yaxis=dict(type='log', range=[-0.6, 1.0]), # Logarithmische y-Achse exakt wie in deiner Grafik!
             margin=dict(l=40, r=40, t=10, b=40),
             height=380,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
@@ -77,16 +87,14 @@ def spo2_applet():
     with col2:
         st.subheader("📉 Signal am Detektor (Transmission)")
         
-        # Je mehr Absorption, desto weniger Licht transmittiert (ankommende Intensität)
-        # Wir simulieren hier die reine Intensitätsschwankung (Puls) basierend auf der Dämpfung
         t = np.linspace(0, 2, 200)
-        puls = 0.1 * np.sin(2 * np.pi * 1.2 * t) # Simulierter Herzschlag
+        puls = 0.1 * np.sin(2 * np.pi * 1.2 * t)
         
-        # Intensität antiproportional zur Absorption berechnen
-        intensitaet_base_660 = 2.0 / (abs_at_660 + 0.5)
-        intensitaet_base_940 = 2.0 / (abs_at_940 + 0.5)
+        # Intensität antiproportional zur Absorption (Lambert-Beer Näherung)
+        # Da die linke Achse nun logarithmisch skaliert ist, nutzen wir exp(-abs) für das Licht
+        intensitaet_base_660 = 2.5 * np.exp(-abs_at_660 * 0.4)
+        intensitaet_base_940 = 2.5 * np.exp(-abs_at_940 * 0.4)
         
-        # Pulsierendes Signal generieren
         sig_660 = intensitaet_base_660 - (0.05 * intensitaet_base_660 * puls)
         sig_940 = intensitaet_base_940 - (0.05 * intensitaet_base_940 * puls)
         
@@ -110,8 +118,6 @@ def spo2_applet():
     st.markdown("---")
     st.subheader("📊 Berechnung der Sauerstoffsättigung aus den Kurvenwerten")
     
-    # Didaktische Verhältnisbildung (Ratio-of-Ratios) direkt aus den extrahierten Absorptionswerten
-    # Ein echtes Gerät bestimmt dies über die AC/DC Anteile, welche proportional zur Absorption stehen.
     r_wert_berechnet = abs_at_660 / abs_at_940
     
     c1, c2, c3 = st.columns(3)
@@ -128,11 +134,9 @@ def spo2_applet():
             """
             f"$$R = \\frac{{\\text{{Absorption}}_{{660nm}}}}{{\\text{{Absorption}}_{{940nm}}}} = \\frac{{{abs_at_660:.3f}}}{{{abs_at_940:.3f}}} = {r_wert_berechnet:.3f}$$"
             """
-            **Der Merksatz für die Prüfung:**
-            - Bei **hoher Sättigung (100% $SpO_2$)** dominiert $HbO_2$. Dieses absorbiert Infrarotlicht ($940\,\text{nm}$) besser als rotes Licht ($660\,\text{nm}$). Der Zähler ist klein, der Nenner groß $\rightarrow$ Der **$R$-Wert ist klein (~0.4)**.
-            - Bei **niedriger Sättigung ($70\%\,SpO_2$)** dominiert ungesättigtes $Hb$. Dieses absorbiert rotes Licht ($660\,\text{nm}$) extrem stark. Der Zähler wird riesig $\rightarrow$ Der **$R$-Wert wird groß (~1.5)**.
-            
-            Das Medizintechnikgerät nutzt anschließend eine fest hinterlegte Kalibrationskurve (empirisch ermittelt), um aus diesem $R$-Wert exakt den $SpO_2$-Prozentwert anzuzeigen.
+            **Der Merksatz für die Prüfung (anhand der Kurven nachvollziehbar):**
+            - Bei **hoher Sättigung (100% $SpO_2$)** dominiert $HbO_2$ (rote Kurve). Betrachten Sie die Schnittpunkte: Bei $940\,\text{nm}$ ist die Absorption höher als bei $660\,\text{nm}$. Der Zähler ist kleiner als der Nenner $\rightarrow$ Der **$R$-Wert ist klein (< 1.0)**.
+            - Bei **niedriger Sättigung ($70\%\,SpO_2$)** gewinnt das ungesättigte $Hb$ (blaue Kurve) die Oberhand. Bei $660\,\text{nm}$ schießt die Absorption dramatisch in die Höhe, während sie bei $940\,\text{nm}$ flach bleibt. Der Zähler wird riesig $\rightarrow$ Der **$R$-Wert wird deutlich größer (> 1.0)**.
             """
         )
 
