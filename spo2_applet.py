@@ -3,151 +3,138 @@ import numpy as np
 import plotly.graph_objects as go
 
 def spo2_applet():
-    st.header("🩸 Der interaktive Pulsoximeter-Sensor")
+    st.header("🩸 Pulsoximetrie: Absorptions- & Berechnungssynthesizer")
     
-    # Didaktischer Begleittext am Anfang
+    # Didaktischer Begleittext
     st.info(
-        "**Arbeitsaufgabe für Studierende:**\n"
-        "1. Stellen Sie die Sauerstoffsättigung ($SpO_2$) auf **100%** und beobachten Sie die Amplituden der roten (660 nm) und infraroten (940 nm) Lichtkurve.\n"
-        "2. Reduzieren Sie den $SpO_2$-Wert schrittweise auf **70%**. Wie verändern sich die pulsierenden Anteile zueinander und was passiert mit dem berechneten Verhältniswert ($R$)?\n"
-        "3. Aktivieren Sie die Fehlerquelle **'Kalte Finger'**. Warum kann das Gerät nun die Sättigung nur noch schwer oder gar nicht mehr berechnen?\n"
-        "4. Aktivieren Sie **'Fremdlicht'**. Welcher Lichtanteil (der konstante Basis-Anteil oder der pulsierende Anteil) verschiebt sich dadurch?"
+        "**Didaktischer Fokus – Wie misst der Sensor die Sättigung?**\n"
+        "Verschieben Sie den $SpO_2$-Regler. Beobachten Sie im linken Diagramm, wie sich die Gesamt-Absorptionskurve "
+        "des Blutes (grün) zwischen den reinen Kurven von sauerstoffarmem $Hb$ (blau) und sauerstoffreichem $HbO_2$ (rot) hin- und herverschiebt.\n\n"
+        "Achten Sie auf die Schnittpunkte mit den Wellenlängen **660 nm** und **940 nm**: Dieses Verhältnis bestimmt, "
+        "wie viel Licht den Detektor erreicht (rechtes Diagramm) und wie das Gerät daraus den $R$-Wert berechnet."
     )
 
-    # Layout: Steuerung links, Grafik und Auswertung rechts
-    col1, col2 = st.columns([1, 2])
+    # Steuerung über einen prominenten Slider oben
+    spo2 = st.slider("Eingestellte Sauerstoffsättigung ($SpO_2$ in %):", min_value=70, max_value=100, value=95, step=1)
+
+    # Layout für die beiden Graphen nebeneinander
+    col1, col2 = st.columns(2)
+
+    # --- MATHEMATISCHE MODELLIERUNG DER ABSORPTIONSKURVEN ---
+    # Wir approximieren die echten Absorptionsverläufe für den didaktischen Zweck
+    wellenlaengen = np.linspace(600, 1000, 400)
+    
+    # Modellierung Hb (Desoxygeniert): Absorbiert stark bei Rot (660), fällt danach stark ab
+    abs_hb = 5.0 * np.exp(-((wellenlaengen - 620) / 80)**2) + 0.2
+    # Modellierung HbO2 (Oxygeniert): Absorbiert schwach bei Rot, steigt bei IR (940) leicht an im Verhältnis zu Hb
+    abs_hbo2 = 0.3 * np.exp(-((wellenlaengen - 640) / 50)**2) + 1.2 * np.exp(-((wellenlaengen - 920) / 150)**2) + 0.1
+
+    # Die aktuelle Gesamtabsorption ist die gewichtete Mischung basierend auf SpO2
+    fraktion_hbo2 = spo2 / 100.0
+    fraktion_hb = 1.0 - fraktion_hbo2
+    abs_gesamt = (fraktion_hb * abs_hb) + (fraktion_hbo2 * abs_hbo2)
+
+    # Spezifische Werte an den Messpunkten 660nm und 940nm berechnen
+    idx_660 = np.abs(wellenlaengen - 660).argmin()
+    idx_940 = np.abs(wellenlaengen - 940).argmin()
+    
+    abs_at_660 = abs_gesamt[idx_660]
+    abs_at_940 = abs_gesamt[idx_940]
 
     with col1:
-        st.subheader("⚙️ Patienten- & Sensor-Setup")
+        st.subheader("📈 Optisches Spektrum & Absorption")
         
-        # 1. Regler für Vitalwerte
-        spo2 = st.slider("Sauerstoffsättigung (SpO₂ in %):", min_value=70, max_value=100, value=98, step=1)
-        hf = st.slider("Pulsfrequenz (HF in bpm):", min_value=40, max_value=140, value=75, step=5)
+        fig_spec = go.Figure()
         
-        st.markdown("---")
-        st.subheader("⚠️ Klinische Störquellen")
+        # Basis-Kurven (Hb und HbO2)
+        fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_hb, mode='lines', name='Deoxygeniertes Hb', line=dict(color='#1976D2', width=1.5, dash='dot')))
+        fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_hbo2, mode='lines', name='Oxygeniertes HbO₂', line=dict(color='#D32F2F', width=1.5, dash='dot')))
         
-        # 2. Fehlerquellen-Auswahl
-        fehler = st.selectbox(
-            "Messtechnische Fehlerquelle simulieren:",
-            ["Kein Fehler (Ideale Messung)", "Kalte Finger (Vasokonstriktion / schwacher Puls)", "Fremdlicht-Einstrahlung (z.B. OP-Leuchte)"]
-        )
-
-    with col2:
-        st.subheader("📊 Fotodiode: Signal-Anzeige (PPG)")
-
-        # --- REALE PHYSIKALISCHE MODELLIERUNG ---
-        # Kalibrationskurve eines typischen Pulsoximeters: SpO2 = 110 - 25 * R
-        R_wert = (110 - spo2) / 25.0
+        # Dynamische Gesamtabsorptionskurve
+        fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_gesamt, mode='lines', name='Gesamt-Blutabsorption', line=dict(color='#2E7D32', width=3)))
         
-        # Zeitachse definieren
-        fs = 200  # Abtastfrequenz in Hz
-        dauer = 3.0  # 3 Sekunden Anzeige
-        t = np.linspace(0, dauer, int(fs * dauer), endpoint=False)
+        # Vertikale Parallelen bei den Wellenlängen des Sensors
+        fig_spec.add_vline(x=660, line_width=2, line_dash="dash", line_color="red")
+        fig_spec.add_vline(x=940, line_width=2, line_dash="dash", line_color="purple")
         
-        # Pulsfrequenz in Hz umrechnen
-        f_puls = hf / 60.0
+        # Schnittpunkte als markante Punkte hervorheben
+        fig_spec.add_trace(go.Scatter(x=[660], y=[abs_at_660], mode='markers', marker=dict(color='red', size=10, symbol='circle'), name='Messpunkt 660 nm'))
+        fig_spec.add_trace(go.Scatter(x=[940], y=[abs_at_940], mode='markers', marker=dict(color='purple', size=10, symbol='circle'), name='Messpunkt 940 nm'))
         
-        # Basis-Pulsform simulieren (Grundwelle + harmonische Oberschwingung für die dikrote Welle)
-        puls_form = (np.sin(2 * np.pi * f_puls * t) * 0.7 + 
-                     np.sin(2 * np.pi * 2 * f_puls * t - 1.0) * 0.3)
-        
-        # Rauschen hinzufügen
-        rauschen = np.random.normal(0, 0.01, size=len(t))
-
-        # --- INITIALISIERUNG DER LICHTANTEILE ---
-        # Infrarot (940 nm) als stabile Referenz setzen
-        konstant_ir = 1.0
-        pulsierend_ir = 0.06  # 6% des Lichts pulsiert idealerweise
-        
-        # Rot (660 nm) wird über den R-Wert bestimmt
-        konstant_rot = 1.0
-        pulsierend_rot = R_wert * (pulsierend_ir / konstant_ir) * konstant_rot
-
-        # --- EFFEKTE DER FEHLERQUELLEN ---
-        fehlermeldung = ""
-        if fehler == "Kalte Finger (Vasokonstriktion / schwacher Puls)":
-            # Reduziert den pulsierenden Anteil massiv (weniger durchblutetes Gewebe)
-            pulsierend_ir *= 0.15
-            pulsierend_rot *= 0.15
-            fehlermeldung = "⚠️ Warnung: Pulsierender Signalanteil zu gering (Puls wird kaum erkannt)!"
-        elif fehler == "Fremdlicht-Einstrahlung (z.B. OP-Leuchte)":
-            # Fügt dem konstanten Basis-Lichtanteil ein starkes Störsignal hinzu
-            konstant_ir += 0.8
-            konstant_rot += 1.2
-            fehlermeldung = "⚠️ Warnung: Konstanter Lichtanteil durch Fremdlicht verschoben (Messung verfälscht)!"
-
-        # --- SIGNAL-SYNTHESE (Transmittiertes Licht an der Fotodiode) ---
-        # Mehr Absorption durch Blut = weniger Licht kommt an der Fotodiode an
-        signal_ir = konstant_ir - (pulsierend_ir * puls_form) + rauschen
-        signal_rot = konstant_rot - (pulsierend_rot * puls_form) + rauschen
-
-        # --- PLOTLY GRAPH ---
-        fig = go.Figure()
-        
-        # Rote Kurve (660 nm)
-        fig.add_trace(go.Scatter(
-            x=t, y=signal_rot, mode='lines', 
-            name='Rotes Licht (660 nm)', line=dict(color='#D32F2F', width=2.5)
-        ))
-        
-        # Infrarote Kurve (940 nm)
-        fig.add_trace(go.Scatter(
-            x=t, y=signal_ir, mode='lines', 
-            name='Infrarotes Licht (940 nm)', line=dict(color='#1976D2', width=2.5, dash='dash')
-        ))
-        
-        fig.update_layout(
-            xaxis_title="Zeit (Sekunden)",
-            yaxis_title="Lichtintensität am Detektor (V)",
-            yaxis=dict(range=[0.4, 2.5]), 
+        fig_spec.update_layout(
+            xaxis_title="Wellenlänge (nm)",
+            yaxis_title="Absorptionskoeffizient (willkürliche Einheiten)",
+            xaxis=dict(range=[600, 1000]),
+            yaxis=dict(range=[0, 5.5]),
             margin=dict(l=40, r=40, t=10, b=40),
-            height=350,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            height=380,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
             template="plotly_white"
         )
         
-        st.plotly_chart(fig, use_container_width=True)
-        
-        if fehlermeldung:
-            st.warning(fehlermeldung)
+        st.plotly_chart(fig_spec, use_container_width=True)
 
-        # --- MATHEMATISCHE AUSWERTUNG & KALIBRATION ---
-        st.markdown("---")
-        st.subheader("📊 Optische Auswertung (Ratio-of-Ratios)")
+    with col2:
+        st.subheader("📉 Signal am Detektor (Transmission)")
         
-        # Live-Berechnung des R-Wertes aus den gewählten Anteilen
-        aktueller_r_effektiv = (pulsierend_rot / konstant_rot) / (pulsierend_ir / konstant_ir)
+        # Je mehr Absorption, desto weniger Licht transmittiert (ankommende Intensität)
+        # Wir simulieren hier die reine Intensitätsschwankung (Puls) basierend auf der Dämpfung
+        t = np.linspace(0, 2, 200)
+        puls = 0.1 * np.sin(2 * np.pi * 1.2 * t) # Simulierter Herzschlag
         
-        # Anzeige in Kacheln
-        calc_col1, calc_col2, calc_col3 = st.columns(3)
-        calc_col1.metric(label="Eingestellte SpO₂", value=f"{spo2} %")
-        calc_col2.metric(label="Berechneter Verhältniswert (R)", value=f"{aktueller_r_effektiv:.3f}")
+        # Intensität antiproportional zur Absorption berechnen
+        intensitaet_base_660 = 2.0 / (abs_at_660 + 0.5)
+        intensitaet_base_940 = 2.0 / (abs_at_940 + 0.5)
         
-        if fehler == "Fremdlicht-Einstrahlung (z.B. OP-Leuchte)":
-            falsche_spo2 = 110 - 25 * aktueller_r_effektiv
-            calc_col3.metric(label="Vom Gerät gemessene SpO₂", value=f"{falsche_spo2:.1f} %", delta=f"{falsche_spo2 - spo2:.1f} % Fehler", delta_color="inverse")
-        else:
-            calc_col3.metric(label="Vom Gerät gemessene SpO₂", value=f"{spo2} % (Korrekt)")
+        # Pulsierendes Signal generieren
+        sig_660 = intensitaet_base_660 - (0.05 * intensitaet_base_660 * puls)
+        sig_940 = intensitaet_base_940 - (0.05 * intensitaet_base_940 * puls)
+        
+        fig_sig = go.Figure()
+        fig_sig.add_trace(go.Scatter(x=t, y=sig_660, mode='lines', name='Detektorsignal Rot (660 nm)', line=dict(color='red', width=2)))
+        fig_sig.add_trace(go.Scatter(x=t, y=sig_940, mode='lines', name='Detektorsignal IR (940 nm)', line=dict(color='purple', width=2)))
+        
+        fig_sig.update_layout(
+            xaxis_title="Zeit (Sekunden)",
+            yaxis_title="Empfangene Lichtintensität (V)",
+            yaxis=dict(range=[0, 3.5]),
+            margin=dict(l=40, r=40, t=10, b=40),
+            height=380,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+            template="plotly_white"
+        )
+        
+        st.plotly_chart(fig_sig, use_container_width=True)
 
-        # Didaktische Zusatz-Erklärung ohne E-Technik-Begriffe
-        with st.expander("🔬 Theorie-Hintergrund: Optische Gewebeabsorption"):
-            st.markdown(
-                r"""
-                Die Pulsoximetrie macht sich das **Lambert-Beersche Gesetz** zunutze. Wenn Licht durch den Finger gesendet wird, unterscheidet das Gerät zwei Anteile:
-                
-                1. **Der konstante Lichtanteil:** Gewebe, Knochen, Haut und das ruhige venöse Blut absorbieren immer gleich viel Licht. Dieser Anteil ändert sich während des Herzschlags nicht.
-                2. **Der pulsierende Lichtanteil:** Mit jedem Herzschlag (Systole) wird neues arterielles Blut in die Fingerspitze gepumpt. Das Gefäß dehnt sich kurz aus, wodurch mehr Licht geschluckt wird. Das sorgt für das rhythmische Auf und Ab im Diagramm.
-                
-                Da sauerstoffreiches Blut ($HbO_2$) und sauerstoffarmes Blut ($Hb$) rotes und infrarotes Licht völlig unterschiedlich absorbieren, 
-                setzt das Gerät die Signalanteile beider Wellenlängen zueinander in Beziehung ($R$-Wert):
-                """
-                f"$$R = \\frac{{\\text{{(Pulsierender Anteil / Konstanter Anteil)}}_{{rot}}}}{{\\text{{(Pulsierender Anteil / Konstanter Anteil)}}_{{infrarot}}}} = \\frac{{{pulsierend_rot:.3f} / {konstant_rot:.1f}}}{{{pulsierend_ir:.3f} / {konstant_ir:.1f}}} = {aktueller_r_effektiv:.3f}$$"
-                """
-                - **Hohe Sättigung (100%):** Infrarot wird stark absorbiert, Rot kaum $\rightarrow$ Der $R$-Wert ist klein (~0.4).
-                - **Niedrige Sättigung (70%):** Rot wird massiv absorbiert $\rightarrow$ Der $R$-Wert wird groß (~1.6).
-                """
-            )
+    # --- MATHEMATISCHE AUSWERTUNG ---
+    st.markdown("---")
+    st.subheader("📊 Berechnung der Sauerstoffsättigung aus den Kurvenwerten")
+    
+    # Didaktische Verhältnisbildung (Ratio-of-Ratios) direkt aus den extrahierten Absorptionswerten
+    # Ein echtes Gerät bestimmt dies über die AC/DC Anteile, welche proportional zur Absorption stehen.
+    r_wert_berechnet = abs_at_660 / abs_at_940
+    
+    c1, c2, c3 = st.columns(3)
+    c1.metric(label="Absorption bei 660 nm (Rot)", value=f"{abs_at_660:.3f}")
+    c2.metric(label="Absorption bei 940 nm (Infrarot)", value=f"{abs_at_940:.3f}")
+    c3.metric(label="Berechneter Verhältniswert (R-Wert)", value=f"{r_wert_berechnet:.3f}")
+    
+    with st.expander("🔬 Der mathematische Rechenweg für Studierende"):
+        st.markdown(
+            r"""
+            Ein Pulsoximeter berechnet die Sättigung nicht absolut, sondern misst das Verhältnis der Dämpfungen bei beiden Wellenlängen.
+            
+            Daraus ergibt sich der **$R$-Wert (Ratio-of-Ratios)**:
+            """
+            f"$$R = \\frac{{\\text{{Absorption}}_{{660nm}}}}{{\\text{{Absorption}}_{{940nm}}}} = \\frac{{{abs_at_660:.3f}}}{{{abs_at_940:.3f}}} = {r_wert_berechnet:.3f}$$"
+            """
+            **Der Merksatz für die Prüfung:**
+            - Bei **hoher Sättigung (100% $SpO_2$)** dominiert $HbO_2$. Dieses absorbiert Infrarotlicht ($940\,\text{nm}$) besser als rotes Licht ($660\,\text{nm}$). Der Zähler ist klein, der Nenner groß $\rightarrow$ Der **$R$-Wert ist klein (~0.4)**.
+            - Bei **niedriger Sättigung ($70\%\,SpO_2$)** dominiert ungesättigtes $Hb$. Dieses absorbiert rotes Licht ($660\,\text{nm}$) extrem stark. Der Zähler wird riesig $\rightarrow$ Der **$R$-Wert wird groß (~1.5)**.
+            
+            Das Medizintechnikgerät nutzt anschließend eine fest hinterlegte Kalibrationskurve (empirisch ermittelt), um aus diesem $R$-Wert exakt den $SpO_2$-Prozentwert anzuzeigen.
+            """
+        )
 
 if __name__ == "__main__":
     st.set_page_config(layout="wide")
