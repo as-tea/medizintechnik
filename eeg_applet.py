@@ -9,10 +9,10 @@ def eeg_applet():
     # Didaktischer Begleittext am Anfang
     st.info(
         "**Arbeitsaufgabe für Studierende:**\n"
-        "1. Wählen Sie den Zustand **'Entspannt / Augen geschlossen'** (Alpha-Wellen).\n"
-        "2. Schalten Sie das **50 Hz Netzbrummen** ein und fügen Sie ein **Augenblinzeln** hinzu. Betrachten Sie das gestörte Signal.\n"
-        "3. Testen Sie die verschiedenen Filtertypen: Welcher Filter entfernt das Netzbrummen, ohne die zugrundeliegenden Alpha-Wellen zu dämpfen? "
-        "Und welcher Filter hilft gegen das Blinzartefakt?"
+        "1. Wählen Sie den Zustand **'Höchste Konzentration (Gamma)'**.\n"
+        "2. Schalten Sie das **50 Hz Netzbrummen** ein. Fällt Ihnen auf, wie nah die Störung (50 Hz) am Nutzsignal (40 Hz) liegt?\n"
+        "3. Testen Sie den **Tiefpass-Filter**: Warum ist er für Alpha-Wellen super, zerstört aber die Gamma-Wellen? "
+        "Welcher Filter rettet das Gamma-Signal?"
     )
 
     # Layout: Steuerung links (Sidebar oder Spalte), Grafik rechts
@@ -24,21 +24,20 @@ def eeg_applet():
         # 1. Patientenzustand / Frequenzbänder
         zustand = st.selectbox(
             "Patientenzustand (EEG-Grundrhythmus):",
-            ["Tiefschlaf (Delta)", "Entspannt / Augen geschlossen (Alpha)", "Konzentriert / Aktiv (Beta)"]
+            [
+                "Tiefschlaf (Delta: ~2 Hz)", 
+                "Entspannt / Augen geschlossen (Alpha: ~10 Hz)", 
+                "Konzentriert / Aktiv (Beta: ~22 Hz)",
+                "Höchste Konzentration / Fokus (Gamma: ~40 Hz)"
+            ]
         )
         
         st.markdown("---")
         st.subheader("❌ Störquellen & Artefakte")
         
-        # 2. Störungen
+        # 2. Störungen und Artefakte als Checkboxen
         netzbrummen = st.checkbox("50 Hz Netzbrummen einschalten", value=False)
-        
-        # Nutzen des Session State, um das Blinzartefakt über den Button-Klick zu steuern
-        if "blinzeln_aktiv" not in st.session_state:
-            st.session_state.blinzeln_aktiv = False
-            
-        if st.button("👁️ Einmaliges Augenblinzeln simulieren"):
-            st.session_state.blinzeln_aktiv = True
+        blinzeln_aktiv = st.checkbox("👁️ Augenblinzeln (Artefakt) hinzufügen", value=False)
 
         st.markdown("---")
         st.subheader("🔍 Digitale Signalverarbeitung")
@@ -62,24 +61,29 @@ def eeg_applet():
         
         # Parameter je nach Patientenzustand setzen
         if "Delta" in zustand:
+            # Delta: hohe Amplitude
             grundsignal += 1.5 * np.sin(2 * np.pi * 2.0 * t)
         elif "Alpha" in zustand:
+            # Alpha: mittlere Amplitude
             grundsignal += 0.8 * np.sin(2 * np.pi * 10.0 * t)
         elif "Beta" in zustand:
+            # Beta: geringe Amplitude
             grundsignal += 0.3 * np.sin(2 * np.pi * 22.0 * t)
+        elif "Gamma" in zustand:
+            # Gamma: sehr hohe Frequenz (~40 Hz), physiologisch sehr kleine Amplitude
+            grundsignal += 0.15 * np.sin(2 * np.pi * 40.0 * t)
 
         # 50 Hz Netzbrummen überlagern
         if netzbrummen:
             grundsignal += 0.6 * np.sin(2 * np.pi * 50.0 * t)
             
-        # Biologisches Artefakt (Augenblinzeln): Ein starker, langsamer Halbsinus-Impuls
-        if st.session_state.blinzeln_aktiv:
+        # Biologisches Artefakt (Augenblinzeln): Wird nun direkt über den Zustand der Checkbox gesteuert
+        if blinzeln_aktiv:
             impuls_start = int(0.8 * fs)
             impuls_dauer = int(0.4 * fs)
             t_impuls = np.linspace(0, np.pi, impuls_dauer)
+            # Sehr starke, langsame Auslenkung
             grundsignal[impuls_start:impuls_start+impuls_dauer] += 4.0 * np.sin(t_impuls)
-            # Zustand für den nächsten Durchlauf wieder zurücksetzen
-            st.session_state.blinzeln_aktiv = False
 
         # --- DIGITALE FILTERUNG (SCIPY) ---
         verarbeitetes_signal = grundsignal.copy()
