@@ -131,7 +131,7 @@ def spo2_applet():
     c3.metric(label="Berechneter Verhältniswert (R-Wert)", value=f"{r_wert_berechnet:.3f}")
     
     # --- ÜBERARBEITETER RECHENWEG ---
-    with st.expander("Der mathematische Rechenweg"):
+    with st.expander("Zusammenfassung und Rechenweg"):
         st.markdown(
             r"""
             ### 1. Das physikalische Messprinzip
