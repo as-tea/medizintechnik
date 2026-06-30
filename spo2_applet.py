@@ -93,8 +93,8 @@ def spo2_applet():
 
         st.info(
             "**Visuelle Signalstärke:**\n\n"
-            "Beobachten Sie die Balken: Wenn die Absorption links für eine Farbe steigt, "
-            "sinkt die empfangene Lichtspannung (Volt) hier im Detektor."
+            "Beobachten Sie die Balken: Wenn die Absorption links für eine Farbe steigt (= es kommt **weniger** Licht an), "
+            "sinkt die Spannung (Volt) im Detektor."
         )
         
         # Erstellung eines sauberen, kompakten Balkendiagramms mit Plotly
@@ -110,8 +110,8 @@ def spo2_applet():
         ))
         
         fig_signal.update_layout(
-            yaxis_title="Empfangene Intensität (Volt)",
-            yaxis=dict(range=[0, 2.6]), # Fester Bereich für gute visuelle Dynamik
+            yaxis_title="Detektorspannung (Volt)",
+            yaxis=dict(range=[1, 2.6]), # Fester Bereich für gute visuelle Dynamik
             margin=dict(l=40, r=40, t=10, b=40),
             height=300, # Leicht kompakter, damit es optisch perfekt harmoniert
             template="plotly_white",
@@ -152,20 +152,19 @@ def spo2_applet():
         
         st.markdown(
             r"""
-            ### 3. Didaktische Fallbeispiele zur Veranschaulichung
+            ### 3. Fallbeispiele zur Veranschaulichung
 
             * **Fall A: Hohe Sättigung (z.B. 100% $SpO_2$)**
               - Das Blut besteht fast ausschließlich aus $HbO_2$ (rote Kurve).
-              - Schauen Sie auf die Schnittpunkte: Bei $660\,\text{nm}$ ist die rote Kurve auf einem physiologischen Minimum (~0.25). Bei $940\,\text{nm}$ im Infrarotbereich absorbiert sie deutlich stärker (~1.2).
+              - Schauen Sie auf die Schnittpunkte: Bei $660\,\text{nm}$ ist die rote Kurve auf einem Minimum. Bei $940\,\text{nm}$ im Infrarotbereich absorbiert sie deutlich stärker.
               - Der Zähler ist also klein, der Nenner groß $\rightarrow$ **Der $R$-Wert wird klein ($\approx 0.4 - 0.5$).**
               
             * **Fall B: Schlechte Sättigung (z.B. 70% $SpO_2$)**
-              - Das ungesättigte $Hb$ (blaue Kurve) gewinnt die Oberhand.
-              - Bei $660\,\text{nm}$ schießt die blaue Kurve dramatisch nach oben ($\approx 2.5$). Im Infrarotbereich bei $940\,\text{nm}$ fällt sie hingegen weit ab ($\approx 0.5$).
-              - Der Zähler wird riesig, der Nenner klein $\rightarrow$ **Der $R$-Wert steigt stark an ($\approx 1.5 - 2.0$).**
-
+              Versuchen Sie anhand von "Fall A" hier selbst eine Erkärung zu finden! 😉
+              
             ### 4. Von der Kurve zum Prozentwert
-            Das Medizintechnikgerät berechnet im ersten Schritt also ausschließlich diesen dimensionslosen **$R$-Wert**. Im Mikrocontroller des Sensors ist eine empirisch ermittelte Kalibrationskurve hinterlegt. Diese ordnet jedem berechneten Verhältniswert die exakte Sättigung in Prozent zu.
+            Das Medizintechnikgerät berechnet im ersten Schritt also ausschließlich diesen dimensionslosen **$R$-Wert**.
+            Im Mikrocontroller des Sensors ist eine empirisch ermittelte Kalibrationskurve hinterlegt. Diese ordnet jedem berechneten Verhältniswert die exakte Sättigung in Prozent zu.
             
             * **Grobe Faustformel für die Praxis:** $SpO_2 \approx 110 - 25 \cdot R$
             """
