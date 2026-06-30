@@ -7,11 +7,11 @@ def spo2_applet():
     
     # Didaktischer Begleittext
     st.info(
-        "**Didaktischer Fokus – Wie misst der Sensor die Sättigung?**\n"
+        "**Wie misst der Sensor die Sättigung?**\n\n"
         "Verschieben Sie den $SpO_2$-Regler. Beobachten Sie im linken Diagramm, wie sich die Gesamt-Absorptionskurve "
         "des Blutes (grün) zwischen den reinen Kurven von sauerstoffarmem $Hb$ (blau) und sauerstoffreichem $HbO_2$ (rot) hin- und herverschiebt.\n\n"
-        "Achten Sie auf die Schnittpunkte mit den Wellenlängen **660 nm** und **940 nm**: Dieses Verhältnis bestimmt, "
-        "wie viel Licht den Detektor erreicht (rechtes Diagramm) und wie das Gerät daraus den $R$-Wert berechnet."
+        "Achten Sie auf die Schnittpunkte mit den Wellenlängen **660 nm** und **940 nm**: Aus diesem Verhältnis der Lichtintensität, die beim Detektor ankommt (rechte Grafik),"
+        "bestimmt der Detektor die Sauerstoffsättigung."
     )
 
     # Steuerung über einen prominenten Slider oben
@@ -121,32 +121,37 @@ def spo2_applet():
     c2.metric(label="Absorption bei 940 nm (Infrarot)", value=f"{abs_at_940:.3f}")
     c3.metric(label="Berechneter Verhältniswert (R-Wert)", value=f"{r_wert_berechnet:.3f}")
     
-    # --- ÜBERARBEITETER RECHENWEG ---
-    with st.expander("🔬 Der mathematische Rechenweg für Studierende (Theorie-Auswertung)"):
+   # --- ÜBERARBEITETER RECHENWEG ---
+    with st.expander("Der mathematische Rechenweg"):
         st.markdown(
             r"""
-            ### 1. Das physikalische Messprinzip (Lambert-Beer)
+            ### 1. Das physikalische Messprinzip
             Ein Pulsoximeter bestimmt die Sauerstoffsättigung, indem es die Lichtschwächung bei zwei ganz spezifischen Wellenlängen vergleicht. 
             Dazu besitzt der Sensor zwei Leuchtdioden: **Rot (660 nm)** und **Infrarot (940 nm)**. 
 
-            Da deoxygeniertes Hämoglobin ($Hb$) und oxygeniertes Hämoglobin ($HbO_2$) ein vollkommen unterschiedliches Absorptionsverhalten zeigen, 
+            Da deoxygeniertes Hämoglobin ($Hb$) und oxygeniertes Hämoglobin ($HbO_2$) unterschiedliche Absorptionsverhalten zeigen, 
             verschiebt sich die grüne Gesamtabsorptionskurve je nach Zusammensetzung des Blutes.
 
             ### 2. Die mathematische Verhältnisbildung ($R$-Wert)
             Um unabhängig von der individuellen Fingerdicke, der Hautfarbe oder der LED-Helligkeit zu messen, normiert das Gerät die Signale und berechnet das Verhältnis der Absorptionen zueinander:
             """
-            f"$$R = \\frac{{\\text{{Absorption bei }} 660\\,\\text{{nm}}}}{{\\text{{Absorption bei }} 940\\,\\text{{nm}}}} = \\frac{{{abs_at_660:.3f}}}{{{abs_at_940:.3f}}} = {r_wert_berechnet:.3f}$$"
-            """
+        )
+        
+        # Die mathematische Formel als separater F-String mit doppelten Backslashes für LaTeX
+        st.write(f"$$R = \\frac{{\\text{{Absorption bei }} 660\\,\\text{{nm}}}}{{\\text{{Absorption bei }} 940\\,\\text{{nm}}}} = \\frac{{{abs_at_660:.3f}}}{{{abs_at_940:.3f}}} = {r_wert_berechnet:.3f}$$")
+        
+        st.markdown(
+            r"""
             ### 3. Didaktische Fallbeispiele zur Veranschaulichung
 
             * **Fall A: Hohe Sättigung (z.B. 100% $SpO_2$)**
               - Das Blut besteht fast ausschließlich aus $HbO_2$ (rote Kurve).
-              - Schauen Sie auf die Schnittpunkte: Bei $660\\,\\text{nm}$ ist die rote Kurve auf einem physiologischen Minimum (~0.25). Bei $940\\,\\text{nm}$ im Infrarotbereich absorbiert sie deutlich stärker (~1.2).
+              - Schauen Sie auf die Schnittpunkte: Bei $660\,\text{nm}$ ist die rote Kurve auf einem physiologischen Minimum (~0.25). Bei $940\,\text{nm}$ im Infrarotbereich absorbiert sie deutlich stärker (~1.2).
               - Der Zähler ist also klein, der Nenner groß $\rightarrow$ **Der $R$-Wert wird klein ($\approx 0.4 - 0.5$).**
               
             * **Fall B: Schlechte Sättigung (z.B. 70% $SpO_2$)**
               - Das ungesättigte $Hb$ (blaue Kurve) gewinnt die Oberhand.
-              - Bei $660\\,\\text{nm}$ schießt die blaue Kurve dramatisch nach oben ($\approx 2.5$). Im Infrarotbereich bei $940\\,\\text{nm}$ fällt sie hingegen weit ab ($\approx 0.5$).
+              - Bei $660\,\text{nm}$ schießt die blaue Kurve dramatisch nach oben ($\approx 2.5$). Im Infrarotbereich bei $940\,\text{nm}$ fällt sie hingegen weit ab ($\approx 0.5$).
               - Der Zähler wird riesig, der Nenner klein $\rightarrow$ **Der $R$-Wert steigt stark an ($\approx 1.5 - 2.0$).**
 
             ### 4. Von der Kurve zum Prozentwert
@@ -155,7 +160,6 @@ def spo2_applet():
             * **Grobe Faustformel für die Praxis:** $SpO_2 \approx 110 - 25 \cdot R$
             """
         )
-
 if __name__ == "__main__":
     st.set_page_config(layout="wide")
     spo2_applet()
