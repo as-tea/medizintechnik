@@ -92,7 +92,6 @@ def spo2_applet():
         intensitaet_base_940 = 2.5 * np.exp(-abs_at_940 * 0.4)
 
         st.info(
-            "**Visuelle Signalstärke:**\n\n"
             "Beobachten Sie die Balken: Wenn die Absorption links für eine Farbe steigt (= es kommt **weniger** Licht an), "
             "sinkt die Spannung (Volt) im Detektor."
         )
