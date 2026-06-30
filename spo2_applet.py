@@ -3,7 +3,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 def spo2_applet():
-    st.header("🩸 Pulsoximetrie: Absorptions- & Berechnungssynthesizer")
+    st.header("🩸 Pulsoximetrie: Absorptions- & Berechnung")
     
     # Didaktischer Begleittext
     st.info(
@@ -85,37 +85,40 @@ def spo2_applet():
         st.plotly_chart(fig_spec, use_container_width=True)
 
     with col2:
-        st.subheader("📡 Signalstärke am Detektor (Transmission)")
+        st.subheader("📡 Signal am Detektor (Transmission)")
         
-        # Berechnung der reinen empfangenen Intensität (statischer DC-Wert)
+        # Berechnung der empfangenen Intensität (statischer DC-Wert)
         intensitaet_base_660 = 2.5 * np.exp(-abs_at_660 * 0.4)
         intensitaet_base_940 = 2.5 * np.exp(-abs_at_940 * 0.4)
 
         st.info(
-            "**Lichttransmission (DC-Signal):**\n\n"
-            "Das Gewebe schwächt das Licht kontinuierlich ab. Je höher die Absorption im linken Diagramm, "
-            "desto weniger Lichtspannung (in Volt) kommt am Detektor an."
+            "**Visuelle Signalstärke:**\n\n"
+            "Beobachten Sie die Balken: Wenn die Absorption links für eine Farbe steigt, "
+            "sinkt die empfangene Lichtspannung (Volt) hier im Detektor."
         )
         
-        # Kompakte Anzeige der beiden Signalstärken nebeneinander
-        c_rot, c_ir = st.columns(2)
+        # Erstellung eines sauberen, kompakten Balkendiagramms mit Plotly
+        fig_signal = go.Figure()
         
-        with c_rot:
-            st.metric(
-                label="🔴 Signal Rot (660 nm)", 
-                value=f"{intensitaet_base_660:.3f} V"
-            )
-            
-        with c_ir:
-            st.metric(
-                label="🟣 Signal Infrarot (940 nm)", 
-                value=f"{intensitaet_base_940:.3f} V"
-            )
-            
-        # Balken zur Visualisierung des Signalverhältnisses
-        st.caption("Verhältnis der empfangenen Signalstärken (Rot zu IR):")
-        verhaeltnis_signal = intensitaet_base_660 / (intensitaet_base_660 + intensitaet_base_940)
-        st.progress(float(np.clip(verhaeltnis_signal, 0.0, 1.0)))
+        fig_signal.add_trace(go.Bar(
+            x=["Rot (660 nm)", "Infrarot (940 nm)"],
+            y=[intensitaet_base_660, intensitaet_base_940],
+            marker_color=["#D32F2F", "#7B1FA2"], # Rot und Lila passend zu den Linien links
+            text=[f"{intensitaet_base_660:.2f} V", f"{intensitaet_base_940:.2f} V"],
+            textposition='auto',
+            width=0.5
+        ))
+        
+        fig_signal.update_layout(
+            yaxis_title="Empfangene Intensität (Volt)",
+            yaxis=dict(range=[0, 2.6]), # Fester Bereich für gute visuelle Dynamik
+            margin=dict(l=40, r=40, t=10, b=40),
+            height=300, # Leicht kompakter, damit es optisch perfekt harmoniert
+            template="plotly_white",
+            showlegend=False
+        )
+        
+        st.plotly_chart(fig_signal, use_container_width=True)
 
     # --- MATHEMATISCHE AUSWERTUNG ---
     st.markdown("---")
