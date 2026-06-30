@@ -84,31 +84,38 @@ def spo2_applet():
         )
         st.plotly_chart(fig_spec, use_container_width=True)
 
-    with col2:
-        st.subheader("📉 Signal am Detektor (Transmission)")
-        t = np.linspace(0, 2, 200)
-        puls = 0.1 * np.sin(2 * np.pi * 1.2 * t)
+with col2:
+        st.subheader("📡 Signalstärke am Detektor (Transmission)")
         
+        # Berechnung der reinen empfangenen Intensität (statischer DC-Wert)
         intensitaet_base_660 = 2.5 * np.exp(-abs_at_660 * 0.4)
         intensitaet_base_940 = 2.5 * np.exp(-abs_at_940 * 0.4)
-        
-        sig_660 = intensitaet_base_660 - (0.05 * intensitaet_base_660 * puls)
-        sig_940 = intensitaet_base_940 - (0.05 * intensitaet_base_940 * puls)
-        
-        fig_sig = go.Figure()
-        fig_sig.add_trace(go.Scatter(x=t, y=sig_660, mode='lines', name='Detektorsignal Rot (660 nm)', line=dict(color='red', width=2)))
-        fig_sig.add_trace(go.Scatter(x=t, y=sig_940, mode='lines', name='Detektorsignal IR (940 nm)', line=dict(color='purple', width=2)))
-        
-        fig_sig.update_layout(
-            # xaxis_title="Zeit (Sekunden)",
-            yaxis_title="Empfangene Lichtintensität (V)",
-            yaxis=dict(range=[0, 2.5]),
-            margin=dict(l=40, r=40, t=10, b=40),
-            height=380,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-            template="plotly_white"
+
+        st.info(
+            "**Lichttransmission (DC-Signal):**\n\n"
+            "Das Gewebe schwächt das Licht kontinuierlich ab. Je höher die Absorption im linken Diagramm, "
+            "desto weniger Lichtspannung (in Volt) kommt am Detektor an."
         )
-        st.plotly_chart(fig_sig, use_container_width=True)
+        
+        # Kompakte Anzeige der beiden Signalstärken nebeneinander
+        c_rot, c_ir = st.columns(2)
+        
+        with c_rot:
+            st.metric(
+                label="🔴 Signal Rot (660 nm)", 
+                value=f"{intensitaet_base_660:.3f} V"
+            )
+            
+        with c_ir:
+            st.metric(
+                label="🟣 Signal Infrarot (940 nm)", 
+                value=f"{intensitaet_base_940:.3f} V"
+            )
+            
+        # Balken zur Visualisierung des Signalverhältnisses
+        st.caption("Verhältnis der empfangenen Signalstärken (Rot zu IR):")
+        verhaeltnis_signal = intensitaet_base_660 / (intensitaet_base_660 + intensitaet_base_940)
+        st.progress(float(np.clip(verhaeltnis_signal, 0.0, 1.0)))
 
     # --- MATHEMATISCHE AUSWERTUNG ---
     st.markdown("---")
