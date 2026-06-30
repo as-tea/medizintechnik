@@ -3,7 +3,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 def spo2_applet():
-    st.header("🩸 Pulsoximetrie: Absorptions- & Berechnung")
+    st.header("🩸 Pulsoximetrie: Absorption & Berechnung")
     
     # Didaktischer Begleittext
     st.info(
