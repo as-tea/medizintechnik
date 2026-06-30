@@ -20,31 +20,28 @@ def spo2_applet():
     # Layout für die beiden Graphen nebeneinander
     col1, col2 = st.columns(2)
 
-    # --- ENGE MATHEMATISCHE ANPASSUNG AN DIE REALE GRAFIK ---
-    wellenlaengen = np.linspace(600, 1000, 400)
+    # --- MATHEMATISCHE ANPASSUNG IN 50-NM-INTERVALLEN ---
+    # Definition der exakten Stützstellen alle 50 nm gemeldet aus der Grafik
+    wellenlaengen_stuetz = np.array([600, 650, 700, 750, 800, 850, 900, 950, 1000])
     
-    # Modellierung Hb (Blau): Fällt steil ab, hat einen lokalen Peak bei 760nm, flacht ab und stürzt ab 930nm ab
-    abs_hb = (
-        8.0 * np.exp(-((wellenlaengen - 550) / 70)**2) +  # Steiler Abfall von links
-        0.8 * np.exp(-((wellenlaengen - 758) / 20)**2) +  # Der charakteristische Peak bei ~760 nm
-        0.6 * (wellenlaengen >= 700) * (wellenlaengen <= 930) * (1 - 0.2 * ((wellenlaengen - 830)/100)**2) + # Flaches Plateau
-        0.6 * np.exp(-((wellenlaengen - 920) / 40)**2) * (wellenlaengen > 920) # Steiler Abfall am Ende bei 1000nm
-    )
-    # Korrektur für glatten Übergang
-    abs_hb = np.where(wellenlaengen > 930, abs_hb * np.exp(-((wellenlaengen - 930) / 40)**2), abs_hb) + 0.15
+    # Manuelle Festlegung der molaren Extinktionskoeffizienten an den Stützstellen (abgelesen aus Ihrer Grafik)
+    # Hb (Blau): Startet sehr hoch, fällt stark, kleiner Peak bei 750-800, flacht ab, sinkt am Ende drastisch
+    hb_stuetz = np.array([10.0, 4.0, 1.8, 1.2, 0.7, 0.6, 0.7, 0.5, 0.12])
+    
+    # HbO2 (Rot): Startet moderat, hat ein Minimum bei ~700, steigt im Infrarotbereich an, bildet ein Plateau
+    hbo2_stuetz = np.array([2.5, 0.4, 0.25, 0.45, 0.8, 1.0, 1.2, 1.2, 0.9])
 
-    # Modellierung HbO2 (Rot): Minimum bei ca. 690nm, steigt dann stetig an, Plateau bei 900-940nm, fällt leicht ab
-    abs_hbo2 = (
-        0.3 * np.exp(-((wellenlaengen - 600) / 40)**2) + # Abfall zu Beginn
-        1.2 * np.exp(-((wellenlaengen - 920) / 120)**2)  # Breiter Buckel im Infrarotbereich
-    ) + 0.25
+    # Für einen schönen, glatten Plot interpolieren wir zwischen den 50-nm-Schritten
+    wellenlaengen = np.linspace(600, 1000, 400)
+    abs_hb = np.interp(wellenlaengen, wellenlaengen_stuetz, hb_stuetz)
+    abs_hbo2 = np.interp(wellenlaengen, wellenlaengen_stuetz, hbo2_stuetz)
 
     # Die aktuelle Gesamtabsorption ist die gewichtete Mischung basierend auf SpO2
     fraktion_hbo2 = spo2 / 100.0
     fraktion_hb = 1.0 - fraktion_hbo2
     abs_gesamt = (fraktion_hb * abs_hb) + (fraktion_hbo2 * abs_hbo2)
 
-    # Spezifische Werte an den Messpunkten 660nm und 940nm berechnen
+    # Spezifische Werte an den Messpunkten 660nm und 940nm berechnen (wird aus den interpolierten Kurven exakt extrahiert)
     idx_660 = np.abs(wellenlaengen - 660).argmin()
     idx_940 = np.abs(wellenlaengen - 940).argmin()
     
@@ -56,18 +53,18 @@ def spo2_applet():
         
         fig_spec = go.Figure()
         
-        # Basis-Kurven (Hb und HbO2) getreu deiner Grafik
+        # Basis-Kurven (Hb und HbO2)
         fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_hb, mode='lines', name='Deoxygeniertes Hb', line=dict(color='#1976D2', width=2)))
         fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_hbo2, mode='lines', name='Oxygeniertes HbO₂', line=dict(color='#D32F2F', width=2)))
         
-        # Dynamische Gesamtabsorptionskurve
+        # Dynamische Gesamtaborptionskurve
         fig_spec.add_trace(go.Scatter(x=wellenlaengen, y=abs_gesamt, mode='lines', name='Gesamt-Blutabsorption', line=dict(color='#2E7D32', width=3)))
         
         # Vertikale Parallelen bei den Wellenlängen des echten Sensors
         fig_spec.add_vline(x=660, line_width=2, line_dash="dash", line_color="red")
         fig_spec.add_vline(x=940, line_width=2, line_dash="dash", line_color="purple")
         
-        # Schnittpunkte als markante Punkte hervorheben
+        # Schnittpunkte als markante Punkte
         fig_spec.add_trace(go.Scatter(x=[660], y=[abs_at_660], mode='markers', marker=dict(color='red', size=10, symbol='circle'), name='Messpunkt 660 nm'))
         fig_spec.add_trace(go.Scatter(x=[940], y=[abs_at_940], mode='markers', marker=dict(color='purple', size=10, symbol='circle'), name='Messpunkt 940 nm'))
         
@@ -75,7 +72,13 @@ def spo2_applet():
             xaxis_title="Wellenlänge (nm)",
             yaxis_title="Molarer Extinktionskoeffizient",
             xaxis=dict(range=[600, 1000]),
-            yaxis=dict(type='log', range=[-0.6, 1.0]), # Logarithmische y-Achse exakt wie in deiner Grafik!
+            # ANPASSUNG DER LOG-ACHSE: Lesbare Dezimalzahlen statt Potenzen
+            yaxis=dict(
+                type='log', 
+                range=[-1.0, 1.1],
+                tickvals=[0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0],
+                ticktext=['0.1', '0.2', '0.5', '1.0', '2.0', '5.0', '10.0']
+            ),
             margin=dict(l=40, r=40, t=10, b=40),
             height=380,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
@@ -91,7 +94,6 @@ def spo2_applet():
         puls = 0.1 * np.sin(2 * np.pi * 1.2 * t)
         
         # Intensität antiproportional zur Absorption (Lambert-Beer Näherung)
-        # Da die linke Achse nun logarithmisch skaliert ist, nutzen wir exp(-abs) für das Licht
         intensitaet_base_660 = 2.5 * np.exp(-abs_at_660 * 0.4)
         intensitaet_base_940 = 2.5 * np.exp(-abs_at_940 * 0.4)
         
@@ -136,10 +138,4 @@ def spo2_applet():
             """
             **Der Merksatz für die Prüfung (anhand der Kurven nachvollziehbar):**
             - Bei **hoher Sättigung (100% $SpO_2$)** dominiert $HbO_2$ (rote Kurve). Betrachten Sie die Schnittpunkte: Bei $940\,\text{nm}$ ist die Absorption höher als bei $660\,\text{nm}$. Der Zähler ist kleiner als der Nenner $\rightarrow$ Der **$R$-Wert ist klein (< 1.0)**.
-            - Bei **niedriger Sättigung ($70\%\,SpO_2$)** gewinnt das ungesättigte $Hb$ (blaue Kurve) die Oberhand. Bei $660\,\text{nm}$ schießt die Absorption dramatisch in die Höhe, während sie bei $940\,\text{nm}$ flach bleibt. Der Zähler wird riesig $\rightarrow$ Der **$R$-Wert wird deutlich größer (> 1.0)**.
-            """
-        )
-
-if __name__ == "__main__":
-    st.set_page_config(layout="wide")
-    spo2_applet()
+            - Bei **niedriger Sättigung ($70\%\,SpO_2$)** gewinnt das ungesättigte $Hb$ (blaue Kurve) die Ober
