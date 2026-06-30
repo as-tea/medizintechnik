@@ -10,7 +10,7 @@ def spo2_applet():
         "**Wie misst der Sensor die Sättigung?**\n\n"
         "Verschieben Sie den $SpO_2$-Regler. Beobachten Sie im linken Diagramm, wie sich die Gesamt-Absorptionskurve "
         "des Blutes (grün) zwischen den theoretischen Kurven von sauerstoffarmem Hämoglobin (blau, entspricht geringer $O_2$-Sättigung) und sauerstoffreichem Hämoglobin (rot, entspricht hoher $O_2$-Sättigung) hin- und herverschiebt.\n\n"
-        "Achten Sie auf die Schnittpunkte mit den Wellenlängen **660 nm** und **940 nm**: Ein Pulsoximeter sendet Licht in genau diesen Farben (Wellenlängen) aus, der verbaute Sensor misst die Absorption dieses Lichts."
+        "Achten Sie auf die Schnittpunkte mit den Wellenlängen **660 nm** und **940 nm**: Ein Pulsoximeter sendet Licht in genau diesen Farben (Wellenlängen) aus, der verbaute Sensor misst die Absorption dieses Lichts. "
         "Aus diesem Verhältnis der Lichtintensität, die beim Detektor ankommt (rechte Grafik), bestimmt der Detektor die Sauerstoffsättigung."
     )
 
@@ -77,4 +77,97 @@ def spo2_applet():
                 tickvals=[0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0],
                 ticktext=['0.1', '0.2', '0.5', '1.0', '2.0', '5.0', '10.0']
             ),
-            margin=dict(l=40, r=40, t
+            margin=dict(l=40, r=40, t=10, b=40),
+            height=380,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+            template="plotly_white"
+        )
+        st.plotly_chart(fig_spec, use_container_width=True)
+
+    with col2:
+        st.subheader("📡 Signalstärke am Detektor (Transmission)")
+        
+        # Berechnung der reinen empfangenen Intensität (statischer DC-Wert)
+        intensitaet_base_660 = 2.5 * np.exp(-abs_at_660 * 0.4)
+        intensitaet_base_940 = 2.5 * np.exp(-abs_at_940 * 0.4)
+
+        st.info(
+            "**Lichttransmission (DC-Signal):**\n\n"
+            "Das Gewebe schwächt das Licht kontinuierlich ab. Je höher die Absorption im linken Diagramm, "
+            "desto weniger Lichtspannung (in Volt) kommt am Detektor an."
+        )
+        
+        # Kompakte Anzeige der beiden Signalstärken nebeneinander
+        c_rot, c_ir = st.columns(2)
+        
+        with c_rot:
+            st.metric(
+                label="🔴 Signal Rot (660 nm)", 
+                value=f"{intensitaet_base_660:.3f} V"
+            )
+            
+        with c_ir:
+            st.metric(
+                label="🟣 Signal Infrarot (940 nm)", 
+                value=f"{intensitaet_base_940:.3f} V"
+            )
+            
+        # Balken zur Visualisierung des Signalverhältnisses
+        st.caption("Verhältnis der empfangenen Signalstärken (Rot zu IR):")
+        verhaeltnis_signal = intensitaet_base_660 / (intensitaet_base_660 + intensitaet_base_940)
+        st.progress(float(np.clip(verhaeltnis_signal, 0.0, 1.0)))
+
+    # --- MATHEMATISCHE AUSWERTUNG ---
+    st.markdown("---")
+    st.subheader("📊 Berechnung der Sauerstoffsättigung aus den Kurvenwerten")
+    
+    r_wert_berechnet = abs_at_660 / abs_at_940
+    
+    c1, c2, c3 = st.columns(3)
+    c1.metric(label="Absorption bei 660 nm (Rot)", value=f"{abs_at_660:.3f}")
+    c2.metric(label="Absorption bei 940 nm (Infrarot)", value=f"{abs_at_940:.3f}")
+    c3.metric(label="Berechneter Verhältniswert (R-Wert)", value=f"{r_wert_berechnet:.3f}")
+    
+    # --- ÜBERARBEITETER RECHENWEG ---
+    with st.expander("Der mathematische Rechenweg"):
+        st.markdown(
+            r"""
+            ### 1. Das physikalische Messprinzip
+            Ein Pulsoximeter bestimmt die Sauerstoffsättigung, indem es die Lichtschwächung bei zwei ganz spezifischen Wellenlängen vergleicht. 
+            Dazu besitzt der Sensor zwei Leuchtdioden: **Rot (660 nm)** und **Infrarot (940 nm)**. 
+
+            Da deoxygeniertes Hämoglobin ($Hb$) und oxygeniertes Hämoglobin ($HbO_2$) unterschiedliche Absorptionsverhalten zeigen, 
+            verschiebt sich die grüne Gesamtabsorptionskurve je nach Zusammensetzung des Blutes.
+
+            ### 2. Die mathematische Verhältnisbildung ($R$-Wert)
+            Um unabhängig von der individuellen Fingerdicke, der Hautfarbe oder der LED-Helligkeit zu messen, normiert das Gerät die Signale und berechnet das Verhältnis der Absorptionen zueinander:
+            """
+        )
+        
+        # Die mathematische Formel als separater F-String mit doppelten Backslashes für LaTeX
+        st.write(f"$$R = \\frac{{\\text{{Absorption bei }} 660\\,\\text{{nm}}}}{{\\text{{Absorption bei }} 940\\,\\text{{nm}}}} = \\frac{{{abs_at_660:.3f}}}{{{abs_at_940:.3f}}} = {r_wert_berechnet:.3f}$$")
+        
+        st.markdown(
+            r"""
+            ### 3. Didaktische Fallbeispiele zur Veranschaulichung
+
+            * **Fall A: Hohe Sättigung (z.B. 100% $SpO_2$)**
+              - Das Blut besteht fast ausschließlich aus $HbO_2$ (rote Kurve).
+              - Schauen Sie auf die Schnittpunkte: Bei $660\,\text{nm}$ ist die rote Kurve auf einem physiologischen Minimum (~0.25). Bei $940\,\text{nm}$ im Infrarotbereich absorbiert sie deutlich stärker (~1.2).
+              - Der Zähler ist also klein, der Nenner groß $\rightarrow$ **Der $R$-Wert wird klein ($\approx 0.4 - 0.5$).**
+              
+            * **Fall B: Schlechte Sättigung (z.B. 70% $SpO_2$)**
+              - Das ungesättigte $Hb$ (blaue Kurve) gewinnt die Oberhand.
+              - Bei $660\,\text{nm}$ schießt die blaue Kurve dramatisch nach oben ($\approx 2.5$). Im Infrarotbereich bei $940\,\text{nm}$ fällt sie hingegen weit ab ($\approx 0.5$).
+              - Der Zähler wird riesig, der Nenner klein $\rightarrow$ **Der $R$-Wert steigt stark an ($\approx 1.5 - 2.0$).**
+
+            ### 4. Von der Kurve zum Prozentwert
+            Das Medizintechnikgerät berechnet im ersten Schritt also ausschließlich diesen dimensionslosen **$R$-Wert**. Im Mikrocontroller des Sensors ist eine empirisch ermittelte Kalibrationskurve hinterlegt. Diese ordnet jedem berechneten Verhältniswert die exakte Sättigung in Prozent zu.
+            
+            * **Grobe Faustformel für die Praxis:** $SpO_2 \approx 110 - 25 \cdot R$
+            """
+        )
+
+if __name__ == "__main__":
+    st.set_page_config(layout="wide")
+    spo2_applet()
