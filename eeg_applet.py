@@ -77,7 +77,7 @@ def eeg_applet():
         if netzbrummen:
             grundsignal += 0.6 * np.sin(2 * np.pi * 50.0 * t)
             
-        # Biologisches Artefakt (Augenblinzeln): Wird nun direkt über den Zustand der Checkbox gesteuert
+        # Biologisches Artefakt (Augenblinzeln): Wird direkt über den Zustand der Checkbox gesteuert
         if blinzeln_aktiv:
             impuls_start = int(0.8 * fs)
             impuls_dauer = int(0.4 * fs)
@@ -114,7 +114,7 @@ def eeg_applet():
         fig.update_layout(
             xaxis_title="Zeit (Sekunden)",
             yaxis_title="Amplitude (µV)",
-            yaxis=dict(range=[-6, 6]),
+            yaxis=dict(range=[-3, 3]), # ANPASSUNG: Jetzt fest skaliert von -3 bis +3 µV
             margin=dict(l=40, r=40, t=10, b=40),
             height=400,
             showlegend=False,
