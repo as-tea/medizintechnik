@@ -3,15 +3,15 @@ import numpy as np
 import plotly.graph_objects as go
 
 def spo2_applet():
-    st.header("🩸 Pulsoximetrie: Absorptions- & Berechnungssynthesizer")
+    st.header("🩸 Pulsoximetrie: Absorptions- & Berechnungs")
     
     # Didaktischer Begleittext
     st.info(
         "**Wie misst der Sensor die Sättigung?**\n\n"
         "Verschieben Sie den $SpO_2$-Regler. Beobachten Sie im linken Diagramm, wie sich die Gesamt-Absorptionskurve "
-        "des Blutes (grün) zwischen den reinen Kurven von sauerstoffarmem $Hb$ (blau) und sauerstoffreichem $HbO_2$ (rot) hin- und herverschiebt.\n\n"
-        "Achten Sie auf die Schnittpunkte mit den Wellenlängen **660 nm** und **940 nm**: Aus diesem Verhältnis der Lichtintensität, die beim Detektor ankommt (rechte Grafik),"
-        "bestimmt der Detektor die Sauerstoffsättigung."
+        "des Blutes (grün) zwischen den theoretischen Kurven von sauerstoffarmem Hämoglobin (blau, entspricht geringer $O_2$-Sättigung) und sauerstoffreichem Hämoglobin (rot, entspricht hoher $O_2$-Sättigung) hin- und herverschiebt.\n\n"
+        "Achten Sie auf die Schnittpunkte mit den Wellenlängen **660 nm** und **940 nm**: Ein Pulsoximeter sendet Licht in genau diesen Farben (Wellenlängen) aus, der verbaute Sensor misst die Absorption dieses Lichts."
+        "Aus diesem Verhältnis der Lichtintensität, die beim Detektor ankommt (rechte Grafik), bestimmt der Detektor die Sauerstoffsättigung."
     )
 
     # Steuerung über einen prominenten Slider oben
@@ -100,9 +100,9 @@ def spo2_applet():
         fig_sig.add_trace(go.Scatter(x=t, y=sig_940, mode='lines', name='Detektorsignal IR (940 nm)', line=dict(color='purple', width=2)))
         
         fig_sig.update_layout(
-            xaxis_title="Zeit (Sekunden)",
+            # xaxis_title="Zeit (Sekunden)",
             yaxis_title="Empfangene Lichtintensität (V)",
-            yaxis=dict(range=[0, 3.5]),
+            yaxis=dict(range=[0, 2.5]),
             margin=dict(l=40, r=40, t=10, b=40),
             height=380,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
