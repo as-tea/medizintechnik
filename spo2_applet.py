@@ -138,4 +138,10 @@ def spo2_applet():
             """
             **Der Merksatz für die Prüfung (anhand der Kurven nachvollziehbar):**
             - Bei **hoher Sättigung (100% $SpO_2$)** dominiert $HbO_2$ (rote Kurve). Betrachten Sie die Schnittpunkte: Bei $940\,\text{nm}$ ist die Absorption höher als bei $660\,\text{nm}$. Der Zähler ist kleiner als der Nenner $\rightarrow$ Der **$R$-Wert ist klein (< 1.0)**.
-            - Bei **niedriger Sättigung ($70\%\,SpO_2$)** gewinnt das ungesättigte $Hb$ (blaue Kurve) die Ober
+            - Bei **niedriger Sättigung ($70\%\,SpO_2$)** gewinnt das ungesättigte $Hb$ (blaue Kurve) die Oberhand. Bei $660\,\text{nm}$ schießt die Absorption dramatisch in die Höhe, während sie bei $940\,\text{nm}$ flach bleibt. Der Zähler wird riesig $\rightarrow$ Der **$R$-Wert wird deutlich größer (> 1.0)**.
+            """
+        )
+
+if __name__ == "__main__":
+    st.set_page_config(layout="wide")
+    spo2_applet()
