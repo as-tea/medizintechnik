@@ -4,15 +4,16 @@ import scipy.signal as signal
 import plotly.graph_objects as go
 
 def eeg_applet():
-    st.header("🧠 Der Gehirnwellen-Synthesizer & Filter")
+    st.header("🧠 EEG-Signale & Filter")
     
-    # Didaktischer Begleittext am Anfang
+    # Allgemeine Bedienungsanleitung am Anfang
     st.info(
-        "**Arbeitsaufgabe für Studierende:**\n"
-        "1. Wählen Sie den Zustand **'Höchste Konzentration (Gamma)'**.\n"
-        "2. Schalten Sie das **50 Hz Netzbrummen** ein. Fällt Ihnen auf, wie nah die Störung (50 Hz) am Nutzsignal (40 Hz) liegt?\n"
-        "3. Testen Sie den **Tiefpass-Filter**: Warum ist er für Alpha-Wellen super, zerstört aber die Gamma-Wellen? "
-        "Welcher Filter rettet das Gamma-Signal?"
+        "**Bedienungsanleitung:**\n\n"
+        "Mit diesem interaktiven Applet können Sie untersuchen, wie bioelektrische Signale des Gehirns "
+        "erfasst und von typischen Störquellen bereinigt werden. \n\n"
+        "Konfigurieren Sie auf der linken Seite den EEG-Grundrhythmus des Patienten, schalten Sie "
+        "Körper- oder Umweltstörungen hinzu und wählen Sie anschließend das passende digitale Filterverfahren, "
+        "um das Signal im Oszilloskop (rechts) zu bereinigen."
     )
 
     # Layout: Steuerung links (Sidebar oder Spalte), Grafik rechts
@@ -114,7 +115,7 @@ def eeg_applet():
         fig.update_layout(
             xaxis_title="Zeit (Sekunden)",
             yaxis_title="Amplitude (µV)",
-            yaxis=dict(range=[-3, 3]), # ANPASSUNG: Jetzt fest skaliert von -3 bis +3 µV
+            yaxis=dict(range=[-3, 3]), # Fest skaliert von -3 bis +3 µV
             margin=dict(l=40, r=40, t=10, b=40),
             height=400,
             showlegend=False,
@@ -123,12 +124,15 @@ def eeg_applet():
         
         st.plotly_chart(fig, use_container_width=True)
         
-        # Technische Zusatz-Informationen
-        with st.expander("🔬 Signalverarbeitungs-Details einblenden"):
+        # Didaktischer Arbeitsauftrag anstelle der technischen Details
+        with st.expander("📝 Didaktische Arbeitsaufgabe für Studierende"):
             st.markdown(
-                f"**Aktueller Modus:** {filter_typ}\n\n"
-                f"- **Abtastrate ($f_s$):** {fs} Hz\n"
-                f"- **Filter-Methode:** `scipy.signal.sosfiltfilt` (Nullphasenfilterung)"
+                "Probiere die folgenden Szenarien aus, um die Wirkung digitaler Filter zu verstehen:\n\n"
+                "1. **Die Herausforderung bei Fokus:** Wähle den Zustand *'Höchste Konzentration (Gamma)'* und "
+                "schalte das *50 Hz Netzbrummen* ein. Fällt dir auf, wie nah die Störung (50 Hz) am biologischen Nutzsignal (40 Hz) liegt?\n"
+                "2. **Filter-Vergleich:** Teste nun den *Tiefpass-Filter*. Warum ist er für langsame Wellen (z.B. Alpha/Delta) super, "
+                "zerstört hier aber die schnellen Gamma-Wellen komplett?\n"
+                "3. **Die Rettung:** Welcher Filter schafft es, das hocheffiziente Gamma-Signal zu retten und die 50 Hz Netzstörung präzise auszulöschen?"
             )
 
 if __name__ == "__main__":
