@@ -113,7 +113,6 @@ def pacemaker_applet():
             next_sensing_time = min([b for b in beat_times if b > last_action_time], default=99.0)
             
             # Hat das Gerät überhaupt Sensing aktiviert?
-            sensing_aktiv = "O" Horizont in pos2
             if pos2[0] == "O":
                 next_sensing_time = 99.0 # Ignoriere Eigensignale komplett
                 
