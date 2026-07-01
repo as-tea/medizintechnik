@@ -51,8 +51,8 @@ def pacemaker_applet():
 
     st.markdown("---")
     
-    # 2) Darunter die Zusammenfassung der gewählten Konfiguration (Teil "Aktiver Betriebsmodus" wurde gelöscht)
-    st.markdown("### Zusammenfassung und Bedeutung der Konfiguration")
+    # 2) Zusammenfassung der gewählten Konfiguration direkt darunter
+    st.markdown("### 🔍 Hardware- & Firmware-Konfiguration")
     
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -74,7 +74,7 @@ def pacemaker_applet():
         if "O" in pos3: st.write("🔄 Starres Stimulationsmuster, unabhängig von eigener Herzaktivität")
 
     if "R" in pos4:
-        st.success("Die Sensoren des Herzschrittmachers erkennen eine Änderung der Herzfrequenz und passen die Stimulation entsprechend an.")
+        st.success("🤖 Die Sensoren des Herzschrittmachers erkennen eine Änderung der Herzfrequenz und passen die Stimulation entsprechend an.")
 
     st.markdown("---")
 
@@ -82,7 +82,7 @@ def pacemaker_applet():
     col_sim, col_graph = st.columns([1, 2])
 
     with col_sim:
-        st.subheader("𫫛 Patientensignal-Simulation")
+        st.subheader("🫀 Patientensignal-Simulation")
         patient_hr = st.slider("Intrinsische (eigene) Herzfrequenz (bpm):", min_value=40, max_value=100, value=55, step=5)
         pacemaker_base_rate = 60 # Feste programmierbare Untergrenze des Schrittmachers
 
@@ -107,73 +107,27 @@ def pacemaker_applet():
         pacing_times = []
         last_action_time = 0.0
         
-        # Simulation der Timer-Zustände im Schrittmacher
+        # Stabilisierte Simulation der Timer-Zustände im Schrittmacher
         current_time = 0.0
         while current_time < 4.0:
+            # Nächstes potenzielles Eigensignal finden
             next_sensing_time = min([b for b in beat_times if b > last_action_time], default=99.0)
             
             if pos2[0] == "O":
                 next_sensing_time = 99.0
                 
+            # Schaut nach, ob ein Eigensignal vor dem nächsten geplanten Pace-Spike kommt
             if next_sensing_time < last_action_time + pm_interval:
                 current_time = next_sensing_time
+                
                 if pos3[0] in ["I", "D"]:
+                    # Inhibition: Timer wird auf den aktuellen Sensing-Zeitpunkt zurückgesetzt
+                    last_action_time = current_time
+                elif pos3[0] == "T":
+                    # Triggerung: Sofortiger Pace-Spike auf das Sensing-Ereignis
+                    if pos1[0] != "O":
+                        pacing_times.append(current_time)
+                    # Timer wird ab dem Trigger-Spike neu gestartet
                     last_action_time = current_time
                 else:
-                    if last_action_time + pm_interval < 4.0:
-                        pacing_times.append(last_action_time + pm_interval)
-                        last_action_time += pm_interval
-                    current_time = last_action_time
-            else:
-                if pos1[0] != "O":
-                    if last_action_time + pm_interval < 4.0:
-                        pacing_times.append(last_action_time + pm_interval)
-                last_action_time += pm_interval
-                current_time = last_action_time
-
-        # Zeichne intrinsische Peaks (Gewebeaktivität)
-        if pos2[0] != "O":
-            for b in beat_times:
-                idx = np.abs(t - b).argmin()
-                y_heart[idx:idx+5] = 1.0
-                
-        # Zeichne Pacing Spikes (Hardware-Output)
-        for p_time in pacing_times:
-            idx = np.abs(t - p_time).argmin()
-            y_pacing[idx:idx+3] = 1.5
-
-        # Plotly Figur aufbauen
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=t, y=y_heart, mode='lines', name='Biologisches Eigensignal', line=dict(color='#1E88E5', width=2)))
-        fig.add_trace(go.Scatter(x=t, y=y_pacing, mode='lines', name='Schrittmacher-Impuls (Spike)', line=dict(color='#D81B60', width=2)))
-        
-        fig.update_layout(
-            xaxis_title="Zeit Verlauf (Sekunden)",
-            yaxis_title="Signalamplitude / Logik-Pegel",
-            yaxis=dict(range=[-0.2, 2.0], tickvals=[0, 1, 1.5], ticktext=['Baseline', 'Eigenpotential', 'Pacing Spike']),
-            margin=dict(l=40, r=20, t=20, b=40), height=260, template="plotly_dark",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-    # --- DIDAKTISCHER ANALYSIS-BLOCK ---
-    st.markdown("---")
-    with st.expander("Zusatzinfos für besseres Verständnis"):
-        st.markdown(
-            f"""
-            ### Funktionelle Verhaltensanalyse für den Code **{code_string}**
-            
-            1. **Die Eingangsstufe (Sensing-Kanal):**
-               Wenn Sie die intrinsische Herzfrequenz über den Regler auf **über 60 bpm** stellen, sehen Sie bei aktiver Position II und III (z.B. VVI), wie die roten Schrittmacher-Spikes komplett verschwinden. Der interne Komparator detektiert das Signal und **inhibiert (blockiert)** die Ausgangsstufe.
-               
-            2. **Der asynchrone Fehlerfall (z.B. VOO oder AOO):**
-               Wählen Sie als Reaktionsmodus **O**. Unabhängig davon, wie schnell das biologische Herz schlägt, feuert die Ausgangsstufe starr im Takt der programmierten Frequenz. *Technisches Risiko:* Im schlimmsten Fall kann es zu Herzrhythmusstörungen kommen.
-               
-            3. **Blanking Period (Schutz vor Eigendestruktion):**
-               Während eines Pacing Spikes (Anzeige im Diagramm: {pacing_times[:1] if pacing_times else 'Keiner'}) muss der Sensing-Eingang für ca. 20–40 ms komplett abgeschalten werden. Ohne diese Schaltung würde die Energie des eigenen Stimulationsimpulses die interne Elektronik überlasten.
-            """
-        )
-
-if __name__ == "__main__":
-    st.set_page_config(layout="wide")
-    pacemaker_applet()
+                    # Asynchron (O): Ignoriere Eigens
