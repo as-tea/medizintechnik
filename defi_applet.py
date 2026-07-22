@@ -146,7 +146,7 @@ fig.update_layout(
 
 # Fixierte Achsenskalierung zur Vermeidung automatischer Neuskalierung
 fig.update_xaxes(range=[0, 20], autorange=False)
-fig.update_yaxes(range=[-35, 45], autorange=False)
+fig.update_yaxes(range=[-35, 35], autorange=False)
 
 with col_plot:
     st.plotly_chart(fig, use_container_width=True)
