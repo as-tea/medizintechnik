@@ -138,7 +138,7 @@ if check_clicked:
     
     if correct_count == total_count:
         st.balloons()
-        st.success("🎉 **Perfekt!** Sie haben alle 10 Schritte in die exakt richtige Reihenfolge gebracht!")
+        st.success("🎉 **Perfekt!** Sie haben alle 10 Schritte in die richtige Reihenfolge gebracht!")
     else:
         st.warning(f"🎯 **Ergebnis:** {correct_count} von {total_count} Schritten stehen bereits an der richtigen Position.")
         st.caption("Tipp: STK und MTK sind in ihrer Reihenfolge untereinander austauschbar. Überlegen Sie, welche Schritte zwingend VOR der ersten Anwendung am Patienten stattfinden müssen.")
