@@ -140,13 +140,13 @@ fig.update_layout(
     yaxis_title="Stromstärke I (Ampere)",
     template="plotly_white",
     hovermode="x unified",
-    legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.01),
+    legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99),
     height=450
 )
 
 # Fixierte Achsenskalierung zur Vermeidung automatischer Neuskalierung
 fig.update_xaxes(range=[0, 20], autorange=False)
-fig.update_yaxes(range=[-35, 65], autorange=False)
+fig.update_yaxes(range=[-35, 45], autorange=False)
 
 with col_plot:
     st.plotly_chart(fig, use_container_width=True)
