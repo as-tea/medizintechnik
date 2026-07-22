@@ -38,7 +38,7 @@ st.markdown("""
 st.title("⚡ DefiSim: Physik & Physiologie der Defibrillation")
 st.markdown("""
 Dieses interaktive Applet erklärt die physikalischen und physiologischen Grundlagen der kardialen Defibrillation.
-Ein Defibrillator stoppt durch eine gleichzeitige Depolarisation aller Herzmuskelzellen das "chaotische" Kammerflimmern. Durch diesen "Reset" kann der der **Sinusknoten** seine Aufgabe als primärer Taktgeber wieder übernehmen.
+Ein Defibrillator stoppt durch eine gleichzeitige Depolarisation aller Herzmuskelzellen das "chaotische" Kammerflimmern. Durch diesen "Reset" kann der **Sinusknoten** seine Aufgabe als primärer Taktgeber wieder übernehmen.
 """)
 
 st.divider()
@@ -68,43 +68,46 @@ st.sidebar.markdown("---")
 st.sidebar.info("**Tipp:** Verändern Sie die Impedanz, um zu sehen, wie sich die Kurvenformen bei unterschiedlichen Patientenwiderständen verschieben!")
 
 # -----------------------------------------------------------------------------
-# MATHEMATISCHE IMPULSFUNKTIONEN
+# MATHEMATISCHE IMPULSFUNKTIONEN (Start bei t = 1 ms)
 # -----------------------------------------------------------------------------
 t = np.linspace(0, 20, 1000)  # Zeitstrahl in Millisekunden (0 bis 20 ms)
 
 def calc_mds(E, R, t):
-    """Monophasisch gedämpfte Sinuskurve (RLC-Kreis-Gleichung vereinfacht)"""
-    # Peak-Strom skaliert mit Energie und Widerstand
+    """Monophasisch gedämpfte Sinuskurve (Start bei 1 ms)"""
+    current = np.zeros_like(t)
+    active_mask = t >= 1
+    t_shift = t[active_mask] - 1
+    
     i_peak = np.sqrt(2 * E / (0.003 * R)) * 0.4
     omega = 0.4
     alpha = 0.2 + (R / 200)
-    current = i_peak * np.sin(omega * t) * np.exp(-alpha * t)
-    current = np.where(current < 0, 0, current)  # Nur positive Phase
+    
+    val = i_peak * np.sin(omega * t_shift) * np.exp(-alpha * t_shift)
+    current[active_mask] = np.where(val < 0, 0, val)
     return current
 
 def calc_bte(E, R, t):
-    """Biphasisch abgeschnittene Exponentialkurve"""
+    """Biphasisch abgeschnittene Exponentialkurve (Start bei 1 ms)"""
     i_peak1 = np.sqrt(2 * E / 0.002) / (R * 0.5)
     tau = (R * 120) / 1000  # Zeitkonstante
     
-    phase1_mask = (t >= 0) & (t <= 6)
-    phase2_mask = (t > 6) & (t <= 10)
+    phase1_mask = (t >= 1) & (t <= 7)
+    phase2_mask = (t > 7) & (t <= 11)
     
     current = np.zeros_like(t)
     # Phase 1 (Positiv)
-    current[phase1_mask] = i_peak1 * np.exp(-t[phase1_mask] / tau)
+    current[phase1_mask] = i_peak1 * np.exp(-(t[phase1_mask] - 1) / tau)
     # Phase 2 (Negativ / Invertiert)
     i_end_p1 = i_peak1 * np.exp(-6 / tau)
-    current[phase2_mask] = -0.5 * i_end_p1 * np.exp(-(t[phase2_mask] - 6) / tau)
+    current[phase2_mask] = -0.5 * i_end_p1 * np.exp(-(t[phase2_mask] - 7) / tau)
     return current
 
 def calc_rbw(E, R, t):
-    """Biphasischer Rechteckimpuls (Rectilinear Biphasic)"""
-    # Passt die Stromstärke an die Impedanz an, um Recheckform zu halten
+    """Biphasischer Rechteckimpuls (Start bei 1 ms)"""
     i_const = np.sqrt(E / 12) * (100 / (R + 30)) * 3.5
     
-    phase1_mask = (t >= 0) & (t <= 6)
-    phase2_mask = (t > 6.2) & (t <= 11)
+    phase1_mask = (t >= 1) & (t <= 7)
+    phase2_mask = (t > 7.2) & (t <= 12)
     
     current = np.zeros_like(t)
     current[phase1_mask] = i_const
@@ -141,6 +144,10 @@ fig.update_layout(
     height=450
 )
 
+# Fixierte Achsenskalierung zur Vermeidung automatischer Neuskalierung
+fig.update_xaxes(range=[0, 20], autorange=False)
+fig.update_yaxes(range=[-35, 65], autorange=False)
+
 with col_plot:
     st.plotly_chart(fig, use_container_width=True)
 
@@ -167,7 +174,7 @@ with col_bte_info:
         <h4>Biphasisch Exponentiell (BTE)</h4>
         <ul>
             <li><b>Funktionsweise:</b> Der Kondensator entlädt sich exponentiell. Nach einigen Millisekunden wird der Strom abgebrochen und umgekehrt.</li>
-            <li><b>Impedanz-Verhalten:</b> Bei hoher Impedanz fällt die Kurve langsamer ab. Die Impulsdauer wird, durch komplexe Steuerlogik, abhängig von der Impedanz automatisch angepasst.</li>
+            <li><b>Impedanz-Verhalten:</b> Bei hoher Impedanz fällt die Kurve langsamer ab. Die Impulsdauer wird durch komplexe Steuerlogik abhängig von der Impedanz automatisch angepasst.</li>
             <li><b>Fazit:</b> Sehr gut erforscht, weltweiter Standard in vielen AEDs.</li>
         </ul>
     </div>
@@ -206,27 +213,28 @@ def generate_heart_diagram(mode):
         fillcolor="#ffccd5", line_color="#c9184a", line_width=3
     )
     
-    # Elektroden (Pads)
-    fig.add_shape(type="rect", x0=-1.8, y0=0.8, x1=-1.2, y1=1.4, fillcolor="#3a86ff", line_color="white", name="Pad 1")
-    fig.add_annotation(x=-1.5, y=1.1, text="Pad A", showarrow=False, font=dict(color="white", size=12))
+    # Elektroden (Anode & Kathode)
+    fig.add_shape(type="rect", x0=-1.8, y0=0.8, x1=-1.2, y1=1.4, fillcolor="#3a86ff", line_color="white", name="Anode")
+    fig.add_annotation(x=-1.5, y=1.1, text="Anode", showarrow=False, font=dict(color="white", size=12))
     
-    fig.add_shape(type="rect", x0=1.2, y0=-1.4, x1=1.8, y1=-0.8, fillcolor="#3a86ff", line_color="white", name="Pad 2")
-    fig.add_annotation(x=1.5, y=-1.1, text="Pad B", showarrow=False, font=dict(color="white", size=12))
+    fig.add_shape(type="rect", x0=1.2, y0=-1.4, x1=1.8, y1=-0.8, fillcolor="#3a86ff", line_color="white", name="Kathode")
+    fig.add_annotation(x=1.5, y=-1.1, text="Kathode", showarrow=False, font=dict(color="white", size=12))
 
     if mode == "Monophasisch (MDS)":
-        # Nur eine Richtung (hohe Stromspitze)
+        # Nur eine Richtung (Anode -> Kathode) mit Beschriftung am Pfeil
         fig.add_annotation(x=0.8, y=-0.4, ax=-0.8, ay=0.4, xref="x", yref="y", axref="x", ayref="y",
-                            showarrow=True, arrowhead=2, arrowsize=2, arrowwidth=4, arrowcolor="#023e8a")
-        fig.add_annotation(x=0, y=0, text="<b>NUR EINE RICHTUNG</b><br>(Hoher Peak-Strom nötig!)", showarrow=False, font=dict(color="#d90429", size=12))
+                            showarrow=True, arrowhead=2, arrowsize=2, arrowwidth=4, arrowcolor="#023e8a",
+                            text="Stromfluss", font=dict(color="#023e8a", size=12), yshift=15)
 
     else:
-        # Phase 1 (Hinweg)
+        # Phase 1 (Anode -> Kathode)
         fig.add_annotation(x=0.6, y=-0.2, ax=-0.6, ay=0.4, xref="x", yref="y", axref="x", ayref="y",
-                            showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=3, arrowcolor="#023e8a")
-        # Phase 2 (Rückweg)
+                            showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=3, arrowcolor="#023e8a",
+                            text="Stromfluss (Phase 1)", font=dict(color="#023e8a", size=11), yshift=15)
+        # Phase 2 (Kathode -> Anode)
         fig.add_annotation(x=-0.4, y=-0.6, ax=0.4, ay=-1.0, xref="x", yref="y", axref="x", ayref="y",
-                            showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=3, arrowcolor="#00b4d8")
-        fig.add_annotation(x=0, y=0, text="<b>RICHTUNGSWECHSEL</b><br>Phase 1: Depolarisation<br>Phase 2: Repolarisation", showarrow=False, font=dict(color="#023e8a", size=11))
+                            showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=3, arrowcolor="#00b4d8",
+                            text="Stromfluss (Phase 2)", font=dict(color="#00b4d8", size=11), yshift=-15)
 
     fig.update_xaxes(visible=False, range=[-2.5, 2.5])
     fig.update_yaxes(visible=False, range=[-2.2, 2.0])
@@ -240,17 +248,15 @@ with col_heart_text:
     if mode == "Monophasisch (MDS)":
         st.error("### Nachteile der monophasischen Stimulation")
         st.markdown("""
-        * **Einheitlicher Stromfluss:** Der Strom fließt ausschließlich von Anode zu Kathode.
+        * **Einheitlicher Stromfluss:** Der Strom fließt ausschließlich von der Anode zur Kathode.
         * **Hohe Stromspitzen erforderlich:** Um tief liegende Herzmuskelschichten zu erreichen, muss mit sehr hoher Energie (bis zu **360 Joule**) gearbeitet werden.
-        * **Gewebebelastung:** Der hohe Spitzenstrom schädigt das Myokard und führt zu thermischen Belastungen an den Kontakstellen.
+        * **Gewebebelastung:** Der hohe Spitzenstrom schädigt das Myokard und führt zu thermischen Belastungen an den Kontaktstellen.
         """)
     else:
         st.success("### Vorteile der biphasischen Stimulation")
         st.markdown("""
         * **Phase 1 (Depolarisation):** Der Strom fließt von der Anode zur Kathode und depolarisiert den Großteil des Herzmuskels.
-        * **Phase 2 (Repolarisation/Korrektur):** Der Strommrichtung kehrt sich um. Dies stellt das elektrische Potential an den Zellmembranen wieder her und entfernt verbliebene Ladungsüberschüsse.
+        * **Phase 2 (Repolarisation/Korrektur):** Die Stromrichtung kehrt sich um. Dies stellt das elektrische Potential an den Zellmembranen wieder her und entfernt verbliebene Ladungsüberschüsse.
         * **Geringere Energie nötig:** Bereits **150 bis 200 Joule** reichen aus.
         * **Zellschonend:** Signifikant geringeres Risiko für Verbrennungen und myokardiale Schädigung nach der Defibrillation.
         """)
-
-
