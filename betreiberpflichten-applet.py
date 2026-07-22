@@ -10,26 +10,49 @@ st.set_page_config(
     layout="centered"
 )
 
-# Custom CSS für ansprechendes Karten-Design
+# Custom CSS für dunkles Blau mit weißer, fetter Schrift und besserer Lesbarkeit
 st.markdown("""
     <style>
+    /* Styling für das Drag-and-Drop Sortier-Widget */
+    ul[data-testid="stSortableList"] li, 
+    div[data-testid="stSortableItem"] {
+        background-color: #1E3A8A !important;  /* Dunkles Marineblau */
+        color: #FFFFFF !important;              /* Weiße Schrift */
+        font-weight: bold !important;          /* Fette Schrift */
+        font-size: 1.05rem !important;
+        border-radius: 8px !important;
+        padding: 12px 16px !important;
+        margin-bottom: 8px !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important;
+        border: 1px solid #3B82F6 !important;   /* Hellerer blauer Rand */
+    }
+
+    /* Hover-Effekt beim Drüberfahren mit der Maus */
+    ul[data-testid="stSortableList"] li:hover, 
+    div[data-testid="stSortableItem"]:hover {
+        background-color: #2563EB !important;  /* Etwas helleres Blau beim Hovern */
+        cursor: grab !important;
+    }
+
+    /* Badges für die Phasen-Übersicht */
     .phase-badge {
         display: inline-block;
-        padding: 4px 8px;
-        border-radius: 4px;
+        padding: 6px 12px;
+        border-radius: 6px;
         font-weight: bold;
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         margin-bottom: 8px;
+        color: #FFFFFF !important;
     }
-    .phase-1 { background-color: #e3f2fd; color: #1565c0; }
-    .phase-2 { background-color: #e8f5e9; color: #2e7d32; }
-    .phase-3 { background-color: #fff8e1; color: #f57f17; }
-    .phase-4 { background-color: #ffebee; color: #c62828; }
+    .phase-1 { background-color: #1E3A8A; }  /* Beschaffung: Dunkelblau */
+    .phase-2 { background-color: #0D9488; }  /* Freigabe: Türkis/Dunkelgrün */
+    .phase-3 { background-color: #D97706; }  /* Betrieb: Bernstein/Dunkelgelb */
+    .phase-4 { background-color: #DC2626; }  /* Entsorgung: Rot */
     </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# DATEN & KORREKTE REIHENFOLGE (DGEAIJCHFB)
+# DATEN & KORREKTE REIHENFOLGEN
 # -----------------------------------------------------------------------------
 TASKS = {
     "A": "Schulung des Anwenderpersonals (nach MPBetreibV)",
@@ -44,19 +67,21 @@ TASKS = {
     "J": "Regelmäßige Sichtprüfung und Funktionskontrolle durch den Anwender"
 }
 
-CORRECT_ORDER_KEYS = ["D", "G", "E", "A", "I", "J", "C", "H", "F", "B"]
-
-# Formattierte Texte für die Sortierliste
 def format_item(key):
     return f"[{key}]  {TASKS[key]}"
 
-CORRECT_ITEMS = [format_item(k) for k in CORRECT_ORDER_KEYS]
+# Beide Reihenfolgen erlauben (C vor H ODER H vor C)
+CORRECT_ORDER_1 = ["D", "G", "E", "A", "I", "J", "C", "H", "F", "B"]
+CORRECT_ITEMS_1 = [format_item(k) for k in CORRECT_ORDER_1]
+
+CORRECT_ORDER_2 = ["D", "G", "E", "A", "I", "J", "H", "C", "F", "B"]
+CORRECT_ITEMS_2 = [format_item(k) for k in CORRECT_ORDER_2]
 
 # Phasen-Zuordnung für die Lösungsübersicht
 PHASES = [
     ("Phase 1: Beschaffung & Zulassung", "phase-1", ["D", "G", "E"]),
     ("Phase 2: Qualifizierung & Freigabe", "phase-2", ["A", "I"]),
-    ("Phase 3: Regulärer Betrieb & Instandhaltung", "phase-3", ["J", "C", "H", "F"]),
+    ("Phase 3: Regulärer Betrieb & Instandhaltung", "phase-3", ["J", "C / H", "F"]),
     ("Phase 4: Außerbetriebnahme", "phase-4", ["B"])
 ]
 
@@ -70,14 +95,13 @@ Medizinprodukte unterliegen über ihren gesamten Lebenszyklus hinweg strengen re
 Bringen Sie die folgenden zehn Schritte von der ersten Anschaffung bis zur Entsorgung in die **korrekte logische und zeitliche Reihenfolge**!
 """)
 
-st.info("💡 **Bedienung:** Ziehen Sie die Elemente per **Drag & Drop** an die richtige Position und klicken Sie anschließend auf **Reihenfolge prüfen**.")
+st.info("💡 **Bedienung:** Ziehen Sie die dunkelblauen Kacheln per **Drag & Drop** an die richtige Position und klicken Sie anschließend auf **Reihenfolge prüfen**.")
 
 st.divider()
 
 # -----------------------------------------------------------------------------
 # DRAG & DROP BEREICH
 # -----------------------------------------------------------------------------
-# Start-Reihenfolge (Ungeordnet, z. B. A bis J)
 if "current_items" not in st.session_state:
     st.session_state.current_items = [format_item(k) for k in ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]]
 
@@ -89,7 +113,7 @@ sorted_items = sort_items(st.session_state.current_items, direction="vertical")
 st.divider()
 
 # -----------------------------------------------------------------------------
-# AUSWERTUNG
+# AUSWERTUNG (Flexible Auswertung für STK/MTK)
 # -----------------------------------------------------------------------------
 col_btn1, col_btn2 = st.columns([1, 1])
 
@@ -100,16 +124,20 @@ with col_btn2:
     show_solution = st.checkbox("💡 Musterlösung anzeigen", value=False)
 
 if check_clicked:
-    # Berechne wie viele Elemente an der exakt richtigen Stelle stehen
-    correct_count = sum(1 for a, b in zip(sorted_items, CORRECT_ITEMS) if a == b)
-    total_count = len(CORRECT_ITEMS)
+    # Berechne Übereinstimmung mit beiden möglichen Lösungsoptionen (C-H vs. H-C)
+    match_1 = sum(1 for a, b in zip(sorted_items, CORRECT_ITEMS_1) if a == b)
+    match_2 = sum(1 for a, b in zip(sorted_items, CORRECT_ITEMS_2) if a == b)
+    
+    # Nutze das für den Anwender günstigere Ergebnis
+    correct_count = max(match_1, match_2)
+    total_count = len(CORRECT_ITEMS_1)
     
     if correct_count == total_count:
         st.balloons()
         st.success("🎉 **Perfekt!** Sie haben alle 10 Schritte in die exakt richtige Reihenfolge gebracht!")
     else:
         st.warning(f"🎯 **Ergebnis:** {correct_count} von {total_count} Schritten stehen bereits an der richtigen Position.")
-        st.caption("Tipp: Überlegen Sie, welche Schritte zwingend VOR der ersten Anwendung am Patienten stattfinden müssen.")
+        st.caption("Tipp: STK und MTK sind in ihrer Reihenfolge untereinander austauschbar. Überlegen Sie, welche Schritte zwingend VOR der ersten Anwendung am Patienten stattfinden müssen.")
 
 # -----------------------------------------------------------------------------
 # MUSTERLÖSUNG & LEBENSZYKLUS-PHASEN
@@ -120,5 +148,8 @@ if show_solution:
     for phase_name, badge_class, keys in PHASES:
         st.markdown(f'<span class="phase-badge {badge_class}">{phase_name}</span>', unsafe_allow_html=True)
         for k in keys:
-            st.markdown(f"- **[{k}]** {TASKS[k]}")
+            if " / " in k:
+                st.markdown(f"- **[C / H]** {TASKS['C']} *sowie* {TASKS['H']} *(Reihenfolge untereinander austauschbar)*")
+            else:
+                st.markdown(f"- **[{k}]** {TASKS[k]}")
         st.write("")
