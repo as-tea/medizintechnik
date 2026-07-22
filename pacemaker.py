@@ -181,7 +181,7 @@ def pacemaker_applet():
                Wählen Sie als Reaktionsmodus **O**. Unabhängig davon, wie schnell das biologische Herz schlägt, feuert die Ausgangsstufe starr im Takt der programmierten Frequenz. *Technisches Risiko:* Fällt ein solcher ungesteuerter Spike exakt in die vulnerable Phase der T-Welle des Eigensignals, kann dies fatale Rhythmusstörungen auslösen.
                
             3. **Blanking Period (Schutz vor Eigendestruktion):**
-               Während eines Pacing Spikes (Anzeige im Diagramm: {pacing_times[:1] if pacing_times else 'Keiner'}) muss der Sensing-Eingang für ca. 20–40 ms komplett **kurzgeschlossen (geblankt)** werden. Ohne diese Schaltung würde die gewaltige Energie des eigenen Stimulationsimpulses den empfindlichen Sensing-Verstärker überlasten oder fälschlicherweise als biologisches Eigensignal interpretieren (Oversensing).
+               Während eines Pacing Spikes muss der Sensing-Eingang für ca. 20–40 ms komplett **kurzgeschlossen (geblankt)** werden. Ohne diese Schaltung würde die gewaltige Energie des eigenen Stimulationsimpulses den empfindlichen Sensing-Verstärker überlasten oder fälschlicherweise als biologisches Eigensignal interpretieren (Oversensing).
             """
         )
 
