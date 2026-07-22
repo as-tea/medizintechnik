@@ -140,7 +140,7 @@ fig.update_layout(
     yaxis_title="Stromstärke I (Ampere)",
     template="plotly_white",
     hovermode="x unified",
-    legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+    legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.01),
     height=450
 )
 
