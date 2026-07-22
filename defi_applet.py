@@ -37,8 +37,8 @@ st.markdown("""
 # -----------------------------------------------------------------------------
 st.title("⚡ DefiSim: Physik & Physiologie der Defibrillation")
 st.markdown("""
-Willkommen zu **DefiSim**! Dieses interaktive Applet erklärt die physikalischen und physiologischen Grundlagen der kardialen Defibrillation.
-Ein Defibrillator "startet" das Herz nicht neu, sondern stoppt durch eine gleichzeitige Depolarisation aller Herzmuskelzellen das chaotische Kammerflimmern. Dadurch erhält der **Sinusknoten** als natürlicher Taktgeber die Chance, die Regie wieder zu übernehmen.
+Dieses interaktive Applet erklärt die physikalischen und physiologischen Grundlagen der kardialen Defibrillation.
+Ein Defibrillator stoppt durch eine gleichzeitige Depolarisation aller Herzmuskelzellen das "chaotische" Kammerflimmern. Durch diesen "Reset" kann der der **Sinusknoten** seine Aufgabe als primärer Taktgeber wieder übernehmen.
 """)
 
 st.divider()
@@ -49,23 +49,23 @@ st.divider()
 st.sidebar.header("⚙️ Parameter-Einstellungen")
 
 energy = st.sidebar.slider(
-    "Eingestellte Energie (Joule)",
+    "Energie (Joule)",
     min_value=50, max_value=360, value=200, step=10,
     help="Die im Kondensator gespeicherte Energie E = 0.5 * C * U²"
 )
 
 impedance = st.sidebar.slider(
-    "Transthorakale Impedanz / Widerstand (Ohm)",
+    "Impedanz / Widerstand (Ohm)",
     min_value=30, max_value=180, value=75, step=5,
     help="Der elektrische Widerstand des Patienten (Haut, Fettgewebe, Thorax)."
 )
 
 show_mds = st.sidebar.checkbox("Monophasisch gedämpfte Sinuskurve (MDS)", value=True)
-show_bte = st.sidebar.checkbox("Biphasisch abgeschnittene Exponentialkurve (BTE)", value=True)
+show_bte = st.sidebar.checkbox("Biphasische Exponentialkurve (BTE)", value=True)
 show_rbw = st.sidebar.checkbox("Biphasischer Rechteckimpuls (RBW)", value=True)
 
 st.sidebar.markdown("---")
-st.sidebar.info("**Tipp:** Verändere die Impedanz, um zu sehen, wie sich die Kurvenformen bei unterschiedlichen Patientenwiderständen verhalten!")
+st.sidebar.info("**Tipp:** Verändern Sie die Impedanz, um zu sehen, wie sich die Kurvenformen bei unterschiedlichen Patientenwiderständen verschieben!")
 
 # -----------------------------------------------------------------------------
 # MATHEMATISCHE IMPULSFUNKTIONEN
@@ -164,11 +164,11 @@ col_bte_info, col_rbw_info = st.columns(2)
 with col_bte_info:
     st.markdown("""
     <div class="info-card">
-        <h4>Biphasisch Abgeschnitten (BTE)</h4>
+        <h4>Biphasisch Exponentiell (BTE)</h4>
         <ul>
-            <li><b>Funktionsweise:</b> Kondensator entlädt sich exponentiell. Nach ca. 6 ms wird der Strom abgebrochen und umgekehrt.</li>
-            <li><b>Impedanz-Verhalten:</b> Bei hoher Impedanz fällt die Kurve langsamer ab. Die Impulsdauer muss dynamisch verlängert werden.</li>
-            <li><b>Vorteil:</b> Sehr gut erforscht, weltweiter Standard in vielen AEDs (z. B. HeartStart, Corpuls).</li>
+            <li><b>Funktionsweise:</b> Der Kondensator entlädt sich exponentiell. Nach einigen Millisekunden wird der Strom abgebrochen und umgekehrt.</li>
+            <li><b>Impedanz-Verhalten:</b> Bei hoher Impedanz fällt die Kurve langsamer ab. Die Impulsdauer wird, durch komplexe Steuerlogik, abhängig von der Impedanz automatisch angepasst.</li>
+            <li><b>Fazit:</b> Sehr gut erforscht, weltweiter Standard in vielen AEDs.</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -180,7 +180,7 @@ with col_rbw_info:
         <ul>
             <li><b>Funktionsweise:</b> Hält den Stromfluss in Phase 1 konstant auf einem Plateau (kein exponentieller Abfall).</li>
             <li><b>Impedanz-Verhalten:</b> Der Defibrillator passt die Spannung aktiv an, um stets die ideale Stromstärke zu liefern.</li>
-            <li><b>Vorteil:</b> Vermeidet unnötig hohe Stromspitzen. Besonders effektiv bei Patienten mit hoher Impedanz (z. B. adipös).</li>
+            <li><b>Fazit:</b> Vermeidet unnötig hohe Stromspitzen. Besonders effektiv bei Patienten mit hoher Impedanz (z. B. adipös). ABER: Komplexe, teure Elektronik.</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -192,7 +192,7 @@ st.divider()
 # -----------------------------------------------------------------------------
 st.header("2. Warum ist biphasische Stimulation 'gesünder'?")
 
-mode = st.radio("Wähle den Impulstyp zur Demonstration des Elektronenflusses:", 
+mode = st.radio("Wählen Sie den Impulstyp zur Demonstration des Elektronenflusses:", 
                 ["Monophasisch (MDS)", "Biphasisch (BTE / RBW)"], horizontal=True)
 
 col_heart_vis, col_heart_text = st.columns([1, 1])
@@ -207,18 +207,16 @@ def generate_heart_diagram(mode):
     )
     
     # Elektroden (Pads)
-    fig.add_shape(type="rect", x0=-1.8, y0=0.8, x1=-1.2, y1=1.4, fillcolor="#3a86ff", line_color="black", name="Pad 1")
-    fig.add_annotation(x=-1.5, y=1.1, text="Pad A (Apex)", showarrow=False, font=dict(color="white", size=10))
+    fig.add_shape(type="rect", x0=-1.8, y0=0.8, x1=-1.2, y1=1.4, fillcolor="#3a86ff", line_color="white", name="Pad 1")
+    fig.add_annotation(x=-1.5, y=1.1, text="Pad A", showarrow=False, font=dict(color="white", size=12))
     
-    fig.add_shape(type="rect", x0=1.2, y0=-1.4, x1=1.8, y1=-0.8, fillcolor="#3a86ff", line_color="black", name="Pad 2")
-    fig.add_annotation(x=1.5, y=-1.1, text="Pad B (Sternum)", showarrow=False, font=dict(color="white", size=10))
+    fig.add_shape(type="rect", x0=1.2, y0=-1.4, x1=1.8, y1=-0.8, fillcolor="#3a86ff", line_color="white", name="Pad 2")
+    fig.add_annotation(x=1.5, y=-1.1, text="Pad B", showarrow=False, font=dict(color="white", size=12))
 
     if mode == "Monophasisch (MDS)":
-        # Nur eine Richtung, dicke rote Pfeile (hohe Stromspitze)
+        # Nur eine Richtung (hohe Stromspitze)
         fig.add_annotation(x=0.8, y=-0.4, ax=-0.8, ay=0.4, xref="x", yref="y", axref="x", ayref="y",
-                            showarrow=True, arrowhead=2, arrowsize=2, arrowwidth=4, arrowcolor="#d90429")
-        fig.add_annotation(x=0.2, y=-0.9, ax=-0.4, ay=-0.1, xref="x", yref="y", axref="x", ayref="y",
-                            showarrow=True, arrowhead=2, arrowsize=2, arrowwidth=4, arrowcolor="#d90429")
+                            showarrow=True, arrowhead=2, arrowsize=2, arrowwidth=4, arrowcolor="#023e8a")
         fig.add_annotation(x=0, y=0, text="<b>NUR EINE RICHTUNG</b><br>(Hoher Peak-Strom nötig!)", showarrow=False, font=dict(color="#d90429", size=12))
 
     else:
@@ -244,19 +242,15 @@ with col_heart_text:
         st.markdown("""
         * **Einheitlicher Stromfluss:** Der Strom fließt ausschließlich von Anode zu Kathode.
         * **Hohe Stromspitzen erforderlich:** Um tief liegende Herzmuskelschichten zu erreichen, muss mit sehr hoher Energie (bis zu **360 Joule**) gearbeitet werden.
-        * **Gewebebelastung:** Der hohe Spitzenstrom schädigt das Myokard ("Post-Resuszitations-Kardiomyopathie") und führt zu thermischen Belastungen an den Kontakstellen.
+        * **Gewebebelastung:** Der hohe Spitzenstrom schädigt das Myokard und führt zu thermischen Belastungen an den Kontakstellen.
         """)
     else:
         st.success("### Vorteile der biphasischen Stimulation")
         st.markdown("""
-        * **Phase 1 (Depolarisation):** Der Strom fließt in die erste Richtung und depolarisiert den Großteil des Herzmuskels.
-        * **Phase 2 (Repolarisation/Korrektur):** Der Strom kehrt um. Dies stellt das elektrische Potential an den Zellmembranen wieder her und entfernt verbliebene Ladungsüberschüsse.
-        * **Geringere Energie nötig:** Bereits **150 bis 200 Joule** reichen aus, um dieselbe oder eine höhere Erstschock-Erfolgsquote zu erzielen.
-        * **Zellschonend:** Signifikant geringeres Risiko für Verbrennungen und myokardiale Dysfunktionen nach der Reanimation.
+        * **Phase 1 (Depolarisation):** Der Strom fließt von der Anode zur Kathode und depolarisiert den Großteil des Herzmuskels.
+        * **Phase 2 (Repolarisation/Korrektur):** Der Strommrichtung kehrt sich um. Dies stellt das elektrische Potential an den Zellmembranen wieder her und entfernt verbliebene Ladungsüberschüsse.
+        * **Geringere Energie nötig:** Bereits **150 bis 200 Joule** reichen aus.
+        * **Zellschonend:** Signifikant geringeres Risiko für Verbrennungen und myokardiale Schädigung nach der Defibrillation.
         """)
 
-# -----------------------------------------------------------------------------
-# FOOTER
-# -----------------------------------------------------------------------------
-st.divider()
-st.caption("DefiSim - Interaktives Bildungs-Applet | Entwickelt mit Streamlit & Plotly")
+
