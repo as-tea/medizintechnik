@@ -10,31 +10,35 @@ st.set_page_config(
     layout="centered"
 )
 
-# Custom CSS für dunkles Blau mit weißer, fetter Schrift und besserer Lesbarkeit
-st.markdown("""
-    <style>
-    /* Styling für das Drag-and-Drop Sortier-Widget */
-    ul[data-testid="stSortableList"] li, 
-    div[data-testid="stSortableItem"] {
-        background-color: #1E3A8A !important;  /* Dunkles Marineblau */
-        color: #FFFFFF !important;              /* Weiße Schrift */
+# -----------------------------------------------------------------------------
+# STYLING DEFINITION FÜR DAS SORTABLE-WIDGET
+# -----------------------------------------------------------------------------
+# Dunkelblaues Design mit weißer, fetter Schrift direkt als CSS-Style übergeben
+custom_sortable_style = """
+    ul {
+        padding: 0 !important;
+    }
+    li {
+        background-color: #1E3A8A !important;  /* Dunkelblau */
+        color: #FFFFFF !important;              /* Weißer Text */
         font-weight: bold !important;          /* Fette Schrift */
         font-size: 1.05rem !important;
         border-radius: 8px !important;
         padding: 12px 16px !important;
         margin-bottom: 8px !important;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important;
         border: 1px solid #3B82F6 !important;   /* Hellerer blauer Rand */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+        list-style-type: none !important;
     }
-
-    /* Hover-Effekt beim Drüberfahren mit der Maus */
-    ul[data-testid="stSortableList"] li:hover, 
-    div[data-testid="stSortableItem"]:hover {
-        background-color: #2563EB !important;  /* Etwas helleres Blau beim Hovern */
+    li:hover {
+        background-color: #2563EB !important;  /* Etwas helleres Blau beim Drüberfahren */
         cursor: grab !important;
     }
+"""
 
-    /* Badges für die Phasen-Übersicht */
+# Custom CSS für Badges
+st.markdown("""
+    <style>
     .phase-badge {
         display: inline-block;
         padding: 6px 12px;
@@ -70,14 +74,12 @@ TASKS = {
 def format_item(key):
     return f"[{key}]  {TASKS[key]}"
 
-# Beide Reihenfolgen erlauben (C vor H ODER H vor C)
 CORRECT_ORDER_1 = ["D", "G", "E", "A", "I", "J", "C", "H", "F", "B"]
 CORRECT_ITEMS_1 = [format_item(k) for k in CORRECT_ORDER_1]
 
 CORRECT_ORDER_2 = ["D", "G", "E", "A", "I", "J", "H", "C", "F", "B"]
 CORRECT_ITEMS_2 = [format_item(k) for k in CORRECT_ORDER_2]
 
-# Phasen-Zuordnung für die Lösungsübersicht
 PHASES = [
     ("Phase 1: Beschaffung & Zulassung", "phase-1", ["D", "G", "E"]),
     ("Phase 2: Qualifizierung & Freigabe", "phase-2", ["A", "I"]),
@@ -107,13 +109,17 @@ if "current_items" not in st.session_state:
 
 st.subheader("🛠️ Sortieren Sie die Schritte:")
 
-# Sortable Widget
-sorted_items = sort_items(st.session_state.current_items, direction="vertical")
+# Hier übergeben wir den Style direkt an das sort_items Widget!
+sorted_items = sort_items(
+    st.session_state.current_items, 
+    direction="vertical",
+    custom_style=custom_sortable_style
+)
 
 st.divider()
 
 # -----------------------------------------------------------------------------
-# AUSWERTUNG (Flexible Auswertung für STK/MTK)
+# AUSWERTUNG
 # -----------------------------------------------------------------------------
 col_btn1, col_btn2 = st.columns([1, 1])
 
@@ -124,11 +130,9 @@ with col_btn2:
     show_solution = st.checkbox("💡 Musterlösung anzeigen", value=False)
 
 if check_clicked:
-    # Berechne Übereinstimmung mit beiden möglichen Lösungsoptionen (C-H vs. H-C)
     match_1 = sum(1 for a, b in zip(sorted_items, CORRECT_ITEMS_1) if a == b)
     match_2 = sum(1 for a, b in zip(sorted_items, CORRECT_ITEMS_2) if a == b)
     
-    # Nutze das für den Anwender günstigere Ergebnis
     correct_count = max(match_1, match_2)
     total_count = len(CORRECT_ITEMS_1)
     
@@ -140,7 +144,7 @@ if check_clicked:
         st.caption("Tipp: STK und MTK sind in ihrer Reihenfolge untereinander austauschbar. Überlegen Sie, welche Schritte zwingend VOR der ersten Anwendung am Patienten stattfinden müssen.")
 
 # -----------------------------------------------------------------------------
-# MUSTERLÖSUNG & LEBENSZYKLUS-PHASEN
+# MUSTERLÖSUNG
 # -----------------------------------------------------------------------------
 if show_solution:
     st.subheader("📖 Musterlösung & Lebenszyklus-Phasen")
