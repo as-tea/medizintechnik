@@ -99,10 +99,10 @@ fig.add_trace(
     row=1,
     col=1,
 )
-fig.add_trace(
-    go.Scatter(x=t, y=flow_t, name="Flow", line=dict(color="teal", width=2)),
-    row=2,
-    col=1,
+#fig.add_trace(
+#    go.Scatter(x=t, y=flow_t, name="Flow", line=dict(color="teal", width=2)),
+#    row=2,
+#    col=1,
 )
 fig.add_trace(
     go.Scatter(x=t, y=v_t, name="Volumen", line=dict(color="green", width=2)),
