@@ -38,7 +38,7 @@ if mode == "Volumengesteuert (VCV)":
     p_insp_target = None
 else:
     p_insp_target = st.sidebar.slider(
-        "Inspirationsdruck p_insp (mbar)",
+        "Inspirationsdruck $p_insp$ (mbar)",
         min_value=10,
         max_value=40,
         value=20,
@@ -89,7 +89,7 @@ fig = make_subplots(
     vertical_spacing=0.08,
     subplot_titles=(
         "Druck p(t) [mbar]",
-        "Flow V'(t) [L/min]",
+#        "Flow V'(t) [L/min]",
         "Volumen V(t) [mL]",
     ),
 )
