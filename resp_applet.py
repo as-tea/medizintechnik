@@ -4,47 +4,67 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 st.set_page_config(
-    page_title="Medizintechnik: Beatmungsmodi", layout="wide"
+    page_title="Medizintechnik: Beatmungsmodi",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 st.title("Volumengesteuerte (VCV) vs. Druckgesteuerte (PCV) Beatmung")
 
-# --- SIDEBAR: Parameter ---
-st.sidebar.header("Lungenmechanik")
+# --- ARBEITSAUFTRÄGE (Aufklappbare Box) ---
+with st.expander("📋 **Arbeitsaufträge für Studierende (Hier klicken)**"):
+    st.markdown("""
+    **1. Das ARDS-Experiment (Veränderung der Compliance):**
+    * Wähle zuerst den **VCV-Modus** ($V_T = 500\\text{ mL}$). Senke die Compliance schrittweise von $60\\text{ mL/mbar}$ auf $20\\text{ mL/mbar}$. Beobachte, was mit dem Spitzendruck ($p_{\\text{peak}}$) passiert.
+    * Wechsle nun in den **PCV-Modus** ($p_{\\text{insp}} = 20\\text{ mbar}$). Senke die Compliance erneut auf $20\\text{ mL/mbar}$. Was passiert hier mit dem erzielten Atemzugvolumen ($V_T$)?
+
+    **2. Das Barotrauma-Risiko (VCV):**
+    * Finde im VCV-Modus bei einer sehr steifen Lunge ($C = 20\\text{ mL/mbar}$) ein Tidalvolumen, bei dem die Sicherheitsgrenze von $30\\text{ mbar}$ gerade noch **nicht** überschritten wird.
+
+    **3. Zielvolumen sichern (PCV):**
+    * Versuche im PCV-Modus bei $C = 30\\text{ mL/mbar}$ ein Tidalvolumen von $500\\text{ mL}$ zu erreichen. Wie hoch musst du den Inspirationsdruck einstellen? Überschreitest du dabei die Druckgrenze?
+    """)
+
+# --- SIDEBAR: Parameter (Auf Mobilgeräten über das Menü-Icon oben links erreichbar) ---
+st.sidebar.header("⚙️ Steuerung & Lungenmechanik")
+
+mode = st.sidebar.radio(
+    "Beatmungsmodus", ["Volumengesteuert (VCV)", "Druckgesteuert (PCV)"]
+)
+
 compliance = st.sidebar.slider(
     "Compliance C (mL/mbar)",
     min_value=10,
     max_value=100,
     value=50,
     step=5,
-    help="Niedrig = Steife Lunge, Hoch = Dehnbare Lunge",
+    help="Niedrig = Steife Lunge (z.B. ARDS), Hoch = Dehnbare Lunge",
 )
 
 resistance = 5.0  # Festwert in mbar / (L/s)
 
-st.sidebar.header("Beatmungseinstellungen")
-peep = st.sidebar.number_input("PEEP (mbar)", min_value=0, max_value=20, value=5)
-freq = st.sidebar.number_input(
-    "Atemfrequenz (1/min)", min_value=5, max_value=40, value=15
-)
-mode = st.sidebar.radio(
-    "Beatmungsmodus", ["Volumengesteuert (VCV)", "Druckgesteuert (PCV)"]
-)
+st.sidebar.markdown("---")
+st.sidebar.subheader("Beatmungseinstellungen")
 
 if mode == "Volumengesteuert (VCV)":
     v_t_target = st.sidebar.slider(
-        "Tidalvolumen $V_T$ (mL)", min_value=200, max_value=800, value=500, step=50
+        "Tidalvolumen V_T (mL)", min_value=200, max_value=800, value=500, step=50
     )
     p_insp_target = None
 else:
     p_insp_target = st.sidebar.slider(
-        "Inspirationsdruck $p_insp$ (mbar)",
+        "Inspirationsdruck p_insp (mbar)",
         min_value=10,
         max_value=40,
         value=20,
         step=1,
     )
     v_t_target = None
+
+peep = st.sidebar.number_input("PEEP (mbar)", min_value=0, max_value=20, value=5)
+freq = st.sidebar.number_input(
+    "Atemfrequenz (1/min)", min_value=5, max_value=40, value=15
+)
 
 # --- BERECHNUNG DER KURVEN ---
 t_cycle = 60.0 / freq
@@ -86,7 +106,7 @@ fig = make_subplots(
     rows=3,
     cols=1,
     shared_xaxes=True,
-    vertical_spacing=0.08,
+    vertical_spacing=0.07,  # Kompakt für Smartphones
     subplot_titles=(
         "Druck p(t) [mbar]",
         "Flow V'(t) [L/min]",
@@ -113,11 +133,11 @@ fig.add_trace(
 # Rote Linie bei 30 mbar (Sicherheitsgrenze)
 fig.add_hline(
     y=30,
-    line_width=2,
+    line_width=1.5,
     line_dash="dash",
     line_color="red",
     row=1,
-    col=1
+    col=1,
 )
 
 # Phasenmarkierung (Inspiration / Exspiration)
@@ -125,81 +145,85 @@ fig.add_vline(
     x=t_insp,
     line_width=1,
     line_dash="dash",
-    line_color="gray"
+    line_color="gray",
 )
 
-# Vertikale Beschriftung der Phasen
+# Beschriftung der Phasen
 fig.add_annotation(
     x=t_insp / 2,
     y=50,
-    text="INSPIRATION",
+    text="INSP",
     showarrow=False,
-    textangle=0,
-    font=dict(size=11, color="gray"),
+    textangle=-90,
+    font=dict(size=10, color="gray"),
     row=1,
-    col=1
+    col=1,
 )
 fig.add_annotation(
     x=t_insp + (t_cycle - t_insp) / 2,
     y=50,
-    text="EXSPIRATION",
+    text="EXSP",
     showarrow=False,
-    textangle=0,
-    font=dict(size=11, color="gray"),
+    textangle=-90,
+    font=dict(size=10, color="gray"),
     row=1,
-    col=1
+    col=1,
 )
 
 # Fixierte Skalierung der Achsen
 fig.update_xaxes(range=[0, t_cycle], title_text="Zeit [s]", row=3, col=1)
-fig.update_yaxes(range=[0, 70], row=1, col=1)      # Druckachse fest 0 bis 70 mbar
-fig.update_yaxes(range=[-100, 100], row=2, col=1)  # Flowachse fest -100 bis +100 L/min
-fig.update_yaxes(range=[0, 1000], row=3, col=1)    # Volumenachse fest 0 bis 1000 mL
+fig.update_yaxes(range=[0, 70], row=1, col=1)
+fig.update_yaxes(range=[-100, 100], row=2, col=1)
+fig.update_yaxes(range=[0, 1000], row=3, col=1)
 
-fig.update_layout(height=650, showlegend=False, margin=dict(l=20, r=20, t=40, b=20))
+# Kompaktere Gesamthöhe (520px) für Smartphones
+fig.update_layout(
+    height=520,
+    showlegend=False,
+    margin=dict(l=10, r=10, t=30, b=10),
+    font=dict(size=11),
+)
 
-# --- DASHBOARD LAYOUT ---
-col1, col2 = st.columns([2.5, 1])
+# --- DASHBOARD LAYOUT (Auf Mobilgeräten automatisch gestapelt) ---
+col1, col2 = st.columns([2.2, 1])
 
 with col1:
-    st.plotly_chart(fig, use_container_width=True)
+    # Mobil-freundliche Plotly Config (kein ungewolltes Zoomen beim Scrollen)
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        config={
+            "scrollZoom": False,
+            "displayModeBar": False,
+            "doubleClick": "reset",
+        },
+    )
 
 with col2:
-    st.subheader("Messwerte")
+    st.subheader("📊 Messwerte")
 
     max_p = np.max(p_t)
     max_v = np.max(v_t)
 
-    st.metric("Spitzendruck ($p_peak$)", f"{max_p:.1f} mbar")
-    st.metric("Erzieltes Tidalvolumen ($V_T$)", f"{max_v:.0f} mL")
+    m_col1, m_col2 = st.columns(2)
+    with m_col1:
+        st.metric("Spitzendruck", f"{max_p:.1f} mbar")
+    with m_col2:
+        st.metric("Tidalvolumen", f"{max_v:.0f} mL")
 
     st.markdown("---")
 
-    # Vergrößerte Statusmeldungen für Druck und Volumen
+    # Statusmeldungen
     st.subheader("Status & Warnungen")
 
     if max_p > 30:
-        st.error("🚨 **BAROTRAUMA-RISIKO!**\n\nDer Spitzendruck liegt über 30 mbar!")
+        st.error("🚨 **BAROTRAUMA-RISIKO!**\n\nSpitzendruck > 30 mbar!")
     else:
-        st.success("✅ **DRUCK OPTIMAL**\n\nSpitzendruck im sicheren Bereich (≤ 30 mbar).")
+        st.success("✅ **DRUCK OPTIMAL**\n\nSpitzendruck ≤ 30 mbar.")
 
     if max_v < 300:
-        st.warning("⚠️ **HYPOVENTILATION!**\n\nTidalvolumen ist kritisch niedrig (< 300 mL).")
+        st.warning("⚠️ **HYPOVENTILATION!**\n\nTidalvolumen < 300 mL.")
     elif max_v > 700:
-        st.warning("⚠️ **VOLUTRAUMA-RISIKO!**\n\nTidalvolumen ist sehr hoch (> 700 mL).")
+        st.warning("⚠️ **VOLUTRAUMA-RISIKO!**\n\nTidalvolumen > 700 mL.")
     else:
-        st.info("ℹ️ **VOLUMEN NORMBEREICH**\n\nTidalvolumen liegt zwischen 300 und 700 mL.")
-
-# --- ARBEITSAUFTRÄGE (Aufklappbare Box) ---
-with st.expander("📋 **Arbeitsaufträge für Studierende (Hier klicken zum Aufklappen)**"):
-    st.markdown("""
-    **1. Veränderung der Compliance**
-    * Wählen Sie zuerst den **VCV-Modus** ($V_T = 500\\text{ mL}$). Senken Sie die Compliance schrittweise von $60\\text{ mL/mbar}$ auf $20\\text{ mL/mbar}$. Beobachten Sie, was mit dem Spitzendruck ($p_{\\text{peak}}$) passiert.
-    * Wechseln Sie nun in den **PCV-Modus** ($p_{\\text{insp}} = 20\\text{ mbar}$). Senken Sie die Compliance erneut auf $20\\text{ mL/mbar}$. Was passiert hier mit dem erzielten Atemzugvolumen ($V_T$)?
-
-    **2. Das Risiko für zu hohen Druck (VCV):**
-    * Finden Sie im VCV-Modus bei einer sehr steifen Lunge ($C = 20\\text{ mL/mbar}$) ein Tidalvolumen, bei dem die Sicherheitsgrenze von $30\\text{ mbar}$ gerade noch **nicht** überschritten wird.
-
-    **3. Zielvolumen sichern (PCV):**
-    * Versuchen Sie im PCV-Modus bei $C = 30\\text{ mL/mbar}$ ein Tidalvolumen von $500\\text{ mL}$ zu erreichen. Wie hoch muss der Inspirationsdruck eingestellt sein? Wird dabei die Druckgrenze überschritten?
-    """)
+        st.info("ℹ️ **VOLUMEN NORMBEREICH**\n\nTidalvolumen 300–700 mL.")
