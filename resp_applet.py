@@ -9,7 +9,7 @@ st.set_page_config(
 
 st.title("Volumengesteuerte (VCV) vs. Druckgesteuerte (PCV) Beatmung")
 
-# --- 5. ARBEITSAUFTRÄGE (Aufklappbare Box) ---
+# --- ARBEITSAUFTRÄGE (Aufklappbare Box) ---
 with st.expander("📋 **Arbeitsaufträge für Studierende (Hier klicken zum Aufklappen)**"):
     st.markdown("""
     **1. Das ARDS-Experiment (Veränderung der Compliance):**
@@ -124,17 +124,82 @@ fig.add_trace(
     col=1,
 )
 
-# 2) Rote Linie bei 30 mbar (Sicherheitsgrenze)
-fig.add_shape(
-    type="line",
-    x0=0,
-    x1=t_cycle,
-    y0=30,
-    y1=30,
-    line=dict(color="red", width=2, dash="dash"),
+# Rote Linie bei 30 mbar (Sicherheitsgrenze)
+fig.add_hline(
+    y=30,
+    line_width=2,
+    line_dash="dash",
+    line_color="red",
     row=1,
-    col=1,
+    col=1
 )
 
-# 3) Phasenmarkierungen (Inspiration / Exspiration) mit gestrichelten Linien & vertikaler Beschriftung
-# Trennlinie bei Ende
+# Phasenmarkierung (Inspiration / Exspiration)
+fig.add_vline(
+    x=t_insp,
+    line_width=1,
+    line_dash="dash",
+    line_color="gray"
+)
+
+# Vertikale Beschriftung der Phasen
+fig.add_annotation(
+    x=t_insp / 2,
+    y=50,
+    text="INSPIRATION",
+    showarrow=False,
+    textangle=-90,
+    font=dict(size=11, color="gray"),
+    row=1,
+    col=1
+)
+fig.add_annotation(
+    x=t_insp + (t_cycle - t_insp) / 2,
+    y=50,
+    text="EXSPIRATION",
+    showarrow=False,
+    textangle=-90,
+    font=dict(size=11, color="gray"),
+    row=1,
+    col=1
+)
+
+# Fixierte Skalierung der Achsen
+fig.update_xaxes(range=[0, t_cycle], title_text="Zeit [s]", row=3, col=1)
+fig.update_yaxes(range=[0, 70], row=1, col=1)      # Druckachse fest 0 bis 70 mbar
+fig.update_yaxes(range=[-100, 100], row=2, col=1)  # Flowachse fest -100 bis +100 L/min
+fig.update_yaxes(range=[0, 1000], row=3, col=1)    # Volumenachse fest 0 bis 1000 mL
+
+fig.update_layout(height=650, showlegend=False, margin=dict(l=20, r=20, t=40, b=20))
+
+# --- DASHBOARD LAYOUT ---
+col1, col2 = st.columns([2.5, 1])
+
+with col1:
+    st.plotly_chart(fig, use_container_width=True)
+
+with col2:
+    st.subheader("Messwerte")
+
+    max_p = np.max(p_t)
+    max_v = np.max(v_t)
+
+    st.metric("Spitzendruck (p_peak)", f"{max_p:.1f} mbar")
+    st.metric("Erzieltes Tidalvolumen (V_T)", f"{max_v:.0f} mL")
+
+    st.markdown("---")
+
+    # Vergrößerte Statusmeldungen für Druck und Volumen
+    st.subheader("Status & Warnungen")
+
+    if max_p > 30:
+        st.error("🚨 **BAROTRAUMA-RISIKO!**\n\nDer Spitzendruck liegt über 30 mbar!")
+    else:
+        st.success("✅ **DRUCK OPTIMAL**\n\nSpitzendruck im sicheren Bereich (≤ 30 mbar).")
+
+    if max_v < 300:
+        st.warning("⚠️ **HYPOVENTILATION!**\n\nTidalvolumen ist kritisch niedrig (< 300 mL).")
+    elif max_v > 700:
+        st.warning("⚠️ **VOLUTRAUMA-RISIKO!**\n\nTidalvolumen ist sehr hoch (> 700 mL).")
+    else:
+        st.info("ℹ️ **VOLUMEN NORMBEREICH**\n\nTidalvolumen liegt zwischen 300 und 700 mL.")
