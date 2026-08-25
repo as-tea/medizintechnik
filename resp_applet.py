@@ -9,20 +9,6 @@ st.set_page_config(
 
 st.title("Volumengesteuerte (VCV) vs. Druckgesteuerte (PCV) Beatmung")
 
-# --- ARBEITSAUFTRÄGE (Aufklappbare Box) ---
-with st.expander("📋 **Arbeitsaufträge für Studierende (Hier klicken zum Aufklappen)**"):
-    st.markdown("""
-    **1. Das ARDS-Experiment (Veränderung der Compliance):**
-    * Wähle zuerst den **VCV-Modus** ($V_T = 500\\text{ mL}$). Senke die Compliance schrittweise von $60\\text{ mL/mbar}$ auf $20\\text{ mL/mbar}$. Beobachte, was mit dem Spitzendruck ($p_{\\text{peak}}$) passiert.
-    * Wechsle nun in den **PCV-Modus** ($p_{\\text{insp}} = 20\\text{ mbar}$). Senke die Compliance erneut auf $20\\text{ mL/mbar}$. Was passiert hier mit dem erzielten Atemzugvolumen ($V_T$)?
-
-    **2. Das Barotrauma-Risiko (VCV):**
-    * Finde im VCV-Modus bei einer sehr steifen Lunge ($C = 20\\text{ mL/mbar}$) ein Tidalvolumen, bei dem die Sicherheitsgrenze von $30\\text{ mbar}$ gerade noch **nicht** überschritten wird.
-
-    **3. Zielvolumen sichern (PCV):**
-    * Versuche im PCV-Modus bei $C = 30\\text{ mL/mbar}$ ein Tidalvolumen von $500\\text{ mL}$ zu erreichen. Wie hoch musst du den Inspirationsdruck einstellen? Überschreitest du dabei die Druckgrenze?
-    """)
-
 # --- SIDEBAR: Parameter ---
 st.sidebar.header("Lungenmechanik")
 compliance = st.sidebar.slider(
@@ -31,7 +17,7 @@ compliance = st.sidebar.slider(
     max_value=100,
     value=50,
     step=5,
-    help="Niedrig = Steife Lunge (z.B. ARDS), Hoch = Dehnbare Lunge",
+    help="Niedrig = Steife Lunge, Hoch = Dehnbare Lunge",
 )
 
 resistance = 5.0  # Festwert in mbar / (L/s)
@@ -47,7 +33,7 @@ mode = st.sidebar.radio(
 
 if mode == "Volumengesteuert (VCV)":
     v_t_target = st.sidebar.slider(
-        "Tidalvolumen V_T (mL)", min_value=200, max_value=800, value=500, step=50
+        "Tidalvolumen $V_T$ (mL)", min_value=200, max_value=800, value=500, step=50
     )
     p_insp_target = None
 else:
@@ -148,7 +134,7 @@ fig.add_annotation(
     y=50,
     text="INSPIRATION",
     showarrow=False,
-    textangle=-90,
+    textangle=0,
     font=dict(size=11, color="gray"),
     row=1,
     col=1
@@ -158,7 +144,7 @@ fig.add_annotation(
     y=50,
     text="EXSPIRATION",
     showarrow=False,
-    textangle=-90,
+    textangle=0,
     font=dict(size=11, color="gray"),
     row=1,
     col=1
@@ -184,8 +170,8 @@ with col2:
     max_p = np.max(p_t)
     max_v = np.max(v_t)
 
-    st.metric("Spitzendruck (p_peak)", f"{max_p:.1f} mbar")
-    st.metric("Erzieltes Tidalvolumen (V_T)", f"{max_v:.0f} mL")
+    st.metric("Spitzendruck ($p_peak$)", f"{max_p:.1f} mbar")
+    st.metric("Erzieltes Tidalvolumen ($V_T$)", f"{max_v:.0f} mL")
 
     st.markdown("---")
 
@@ -203,3 +189,17 @@ with col2:
         st.warning("⚠️ **VOLUTRAUMA-RISIKO!**\n\nTidalvolumen ist sehr hoch (> 700 mL).")
     else:
         st.info("ℹ️ **VOLUMEN NORMBEREICH**\n\nTidalvolumen liegt zwischen 300 und 700 mL.")
+
+# --- ARBEITSAUFTRÄGE (Aufklappbare Box) ---
+with st.expander("📋 **Arbeitsaufträge für Studierende (Hier klicken zum Aufklappen)**"):
+    st.markdown("""
+    **1. Veränderung der Compliance**
+    * Wählen Sie zuerst den **VCV-Modus** ($V_T = 500\\text{ mL}$). Senken Sie die Compliance schrittweise von $60\\text{ mL/mbar}$ auf $20\\text{ mL/mbar}$. Beobachten Sie, was mit dem Spitzendruck ($p_{\\text{peak}}$) passiert.
+    * Wechseln Sie nun in den **PCV-Modus** ($p_{\\text{insp}} = 20\\text{ mbar}$). Senken Sie die Compliance erneut auf $20\\text{ mL/mbar}$. Was passiert hier mit dem erzielten Atemzugvolumen ($V_T$)?
+
+    **2. Das Risiko für zu hohen Druck (VCV):**
+    * Finden Sie im VCV-Modus bei einer sehr steifen Lunge ($C = 20\\text{ mL/mbar}$) ein Tidalvolumen, bei dem die Sicherheitsgrenze von $30\\text{ mbar}$ gerade noch **nicht** überschritten wird.
+
+    **3. Zielvolumen sichern (PCV):**
+    * Versuchen Sie im PCV-Modus bei $C = 30\\text{ mL/mbar}$ ein Tidalvolumen von $500\\text{ mL}$ zu erreichen. Wie hoch muss der Inspirationsdruck eingestellt sein? Wird dabei die Druckgrenze überschritten?
+    """)
