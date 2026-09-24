@@ -9,7 +9,7 @@ st.set_page_config(
 
 st.title("☢️ ALARA-Strahlenschutz-Applet")
 st.markdown("""
-Dieses Applet demonstriert das **ALARA-Prinzip** (*As Low As Reasonably Achievable* – So viel wie nötig, so wenig wie möglich). 
+Dieses Applet demonstriert das **ALARA-Prinzip** (As Low As Reasonably Achievable – So viel wie nötig, so wenig wie möglich). 
 Sie können die Parameter über die Schieberegler und Schalter verändern, um die resultierende Dosis live zu beobachten!
 """)
 
