@@ -84,8 +84,23 @@ with col_center:
     # Dynamische farbige Box je nach Dosis-Höhe
     if gesamtdosis < 1.0:
         st.success(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.1f} mSv**\n*Geringe Exposition (Normalbereich)*")
-    elif gesamtdosis < 20.0:
+    elif gesamtdosis < 6.0:
         st.warning(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.1f} mSv**\n*Erhöhte Exposition (Überwachungsbereich)*")
+    elif gesamtdosis < 20.0:
+        # Benutzerdefinierte orange Box für den Kontrollbereich
+        st.markdown(f"""
+            <div style="
+                background-color: #fff3e0; 
+                border: 2px solid #ff9800; 
+                padding: 15px; 
+                border-radius: 10px; 
+                text-align: center; 
+                color: #e65100;">
+                <h3 style="margin: 0; color: #e65100;">📊 Resultierende Dosis</h3>
+                <h1 style="margin: 10px 0; color: #e65100;"><b>{gesamtdosis:.1f} mSv</b></h1>
+                <p style="margin: 0; font-style: italic;">Erhöhte Exposition (Kontrollbereich)</p>
+            </div>
+        """, unsafe_allow_html=True)
     else:
         st.error(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.1f} mSv**\n*Kritische Dosis! Grenzwert überschritten!*")
 
