@@ -35,7 +35,7 @@ zeit = st.sidebar.slider(
 
 # 3. Abstand (Distance)
 abstand = st.sidebar.slider(
-    "📏 Abstand zur Quelle (r in Meter)",
+    "Abstand zur Quelle (r in Meter)",
     min_value=0.5,
     max_value=5.0,
     value=1.0,
@@ -43,7 +43,7 @@ abstand = st.sidebar.slider(
 )
 
 # 4. Abschirmung (Shielding)
-st.sidebar.subheader("🛡️ Abschirmung & Materialien")
+st.sidebar.subheader("Abschirmung & Materialien")
 schutzkleidung = st.sidebar.checkbox("Bleischürze (0.35 mm Pb) anlegen")
 schicht_blei_mm = st.sidebar.slider(
     "Zusätzliche Bleiwand-Dicke (mm)",
@@ -83,11 +83,11 @@ _, _, col_center, _, _ = st.columns([1, 1, 2, 1, 1])
 with col_center:
     # Dynamische farbige Box je nach Dosis-Höhe
     if gesamtdosis < 1.0:
-        st.success(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.3f} mSv**\n*Geringe Exposition (Normalbereich)*")
+        st.success(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.1f} mSv**\n*Geringe Exposition (Normalbereich)*")
     elif gesamtdosis < 20.0:
-        st.warning(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.3f} mSv**\n*Erhöhte Exposition (Überwachungsbereich)*")
+        st.warning(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.1f} mSv**\n*Erhöhte Exposition (Überwachungsbereich)*")
     else:
-        st.error(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.3f} mSv**\n*Kritische Dosis! Grenzwert überschritten!*")
+        st.error(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.1f} mSv**\n*Kritische Dosis! Grenzwert überschritten!*")
 
 st.markdown("---")
 
