@@ -13,20 +13,20 @@ Sie können die Parameter über die Schieberegler und Schalter verändern, um di
 """)
 
 # Sidebar für die Eingabeparameter
-st.sidebar.header("🎛️ Applet-Steuerung (ALARA)")
+st.sidebar.header("Applet-Steuerung (ALARA)")
 
 # 1. Basis-Dosisrate der Strahlenquelle
 basis_dosisrate = st.sidebar.slider(
-    "Basis-Dosisrate der Quelle [mSv/h]",
+    "Basis-Dosisrate der Quelle (mSv/h)",
     min_value=1.0,
-    max_value=100.0,
-    value=20.0,
+    max_value=50.0,
+    value=10.0,
     step=1.0,
 )
 
 # 2. Aufenthaltsdauer (Time)
 zeit = st.sidebar.slider(
-    "⏱️ Aufenthaltsdauer (t) [Stunden]",
+    "Aufenthaltsdauer (t in Stunden)",
     min_value=0.1,
     max_value=10.0,
     value=1.0,
@@ -35,7 +35,7 @@ zeit = st.sidebar.slider(
 
 # 3. Abstand (Distance)
 abstand = st.sidebar.slider(
-    "📏 Abstand zur Quelle (r) [Meter]",
+    "📏 Abstand zur Quelle (r in Meter)",
     min_value=0.5,
     max_value=5.0,
     value=1.0,
@@ -46,7 +46,7 @@ abstand = st.sidebar.slider(
 st.sidebar.subheader("🛡️ Abschirmung & Materialien")
 schutzkleidung = st.sidebar.checkbox("Bleischürze (0.35 mm Pb) anlegen")
 schicht_blei_mm = st.sidebar.slider(
-    "Zusätzliche Bleiwand-Dicke [mm]",
+    "Zusätzliche Bleiwand-Dicke (mm)",
     min_value=0.0,
     max_value=10.0,
     value=0.0,
@@ -74,28 +74,20 @@ dosis_stündlich = (
 )
 gesamtdosis = dosis_stündlich * zeit  
 
-# --- HAUPTBEREICH: ANZEIGE ---
-# Status-Text für das Delta und Farb-Logik festlegen
-if gesamtdosis < 1.0:
-    status_text = "Geringe Exposition (Normalbereich)"
-    delta_color_val = "normal"
-elif gesamtdosis < 20.0:
-    status_text = "Erhöhte Exposition (Überwachungsbereich)"
-    delta_color_val = "off"
-else:
-    status_text = "Kritische Dosis! Grenzwert überschritten!"
-    delta_color_val = "inverse"
+# --- HAUPTBEREICH: ZENTRIERTE HIGHLIGHT-ANZEIGE ---
+st.markdown("---")
 
-# Wir erstellen 3 Spalten, um die Metrik in der Mitte (col2) zu zentrieren
-col1, col2, col3 = st.columns([1, 2, 1])
+# Wir nutzen 5 Spalten: Links und rechts je 2 Teile leerer Raum, in der Mitte 2 Teile Inhalt
+_, _, col_center, _, _ = st.columns([1, 1, 2, 1, 1])
 
-with col2:
-    st.metric(
-        label="📊 Resultierende Dosis",
-        value=f"{gesamtdosis:.3f} mSv",
-        delta=status_text,
-        delta_color=delta_color_val,
-    )
+with col_center:
+    # Dynamische farbige Box je nach Dosis-Höhe
+    if gesamtdosis < 1.0:
+        st.success(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.3f} mSv**\n*Geringe Exposition (Normalbereich)*")
+    elif gesamtdosis < 20.0:
+        st.warning(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.3f} mSv**\n*Erhöhte Exposition (Überwachungsbereich)*")
+    else:
+        st.error(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.3f} mSv**\n*Kritische Dosis! Grenzwert überschritten!*")
 
 st.markdown("---")
 
@@ -106,14 +98,13 @@ col_a, col_b, col_c = st.columns(3)
 with col_a:
     st.markdown("### ⏱️ Time (Zeit)")
     st.write(
-        f"Die Dosis wächst **linear** mit der Zeit. Bei doppelter Dauer ({zeit*2:.1f}h) verdoppelt sich Ihre Dosis."
+        f"Die Dosis wächst **linear** mit der Zeit. Bei doppelter Dauer verdoppelt sich Ihre Dosis."
     )
 
 with col_b:
     st.markdown("### 📏 Distance (Abstand)")
     st.write(
-        "Das **Abstandsgesetz ($I \propto 1/r^2$)** greift stark. "
-        f"Durch Ihren gewählten Abstand von {abstand}m wird die Strahlung um den Faktor `{faktor_abstand:.2f}` skaliert."
+        "Das **Abstandsgesetz ($I \propto 1/r^2$)** führt zu einer großen Reduktion bei vergleichsweise kleiner Änderung."
     )
 
 with col_c:
@@ -137,5 +128,5 @@ dosis_werte = [
 ]
 
 st.line_chart(
-    data={"Abstand [m]": r_werte, "Dosis [mSv]": dosis_werte}, x="Abstand [m]"
+    data={"Abstand (m)": r_werte, "Dosis (mSv)": dosis_werte}, x="Abstand (m)"
 )
