@@ -9,7 +9,7 @@ st.set_page_config(
 st.title("☢️ ALARA-Strahlenschutz-Applet")
 st.markdown("""
 Dieses Applet demonstriert das **ALARA-Prinzip** (*As Low As Reasonably Achievable* – So viel wie nötig, so wenig wie möglich)[cite: 1]. 
-Verändere die Parameter über die Schieberegler und Schalter, um die resultierende Dosis live zu beobachten!
+Sie können die Parameter über die Schieberegler und Schalter verändern, um die resultierende Dosis live zu beobachten!
 """)
 
 # Sidebar für die Eingabeparameter
@@ -57,13 +57,8 @@ schicht_blei_mm = st.sidebar.slider(
 # 1. Abstandsgesetz: Intensität verhält sich proportional zu 1 / r^2
 faktor_abstand = 1.0 / (abstand**2)
 
-# 2. Abschirmung berechnen (vereinfachter Haluwertschicht-Ansatz / Exponentialabschirmung)
-# Annahme für Blei bei typischer Röntgenspannung: ca. 1 mm Pb reduziert die Dosis stark (vereinfacht: Halbierung alle ~0.5mm oder Faktor)
-# Wir nutzen hier einen Dämpfungsfaktor: I = I_0 * exp(-mu * d)
-# Schürze bringt typischerweise ca. 70-80% Reduktion bei bestimmten Energien, setzen wir pauschal an:
+# 2. Abschirmung berechnen
 faktor_schuerze = 0.3 if schutzkleidung else 1.0
-
-# Bleiwand Dämpfung (angenommener linearer Absorptionskoeffizient für Demonstration)
 mu_blei = 0.6  # fiktiver Dämpfungskoeffizient pro mm Blei
 faktor_wand = np.exp(-mu_blei * schicht_blei_mm)
 
@@ -81,7 +76,7 @@ with col1:
         label="📊 Resultierende Dosis",
         value=f"{gesamtdosis:.3f} mSv",
         delta=f"{(gesamtdosis - (basis_dosisrate * 1.0)):.2f} mSv ggü. Basis",
-        delta_inverse=True,
+        delta_color="inverse",
     )
 
 with col2:
@@ -89,7 +84,7 @@ with col2:
         label="⚠️ Gesetzl. Richtwert (Berufl. 1 Jahr)",
         value="20 mSv/Jahr",
         delta="Grenzwert nach StrSchG 2020",
-        delta_off=True,
+        delta_color="off",
     )
 
 with col3:
@@ -104,21 +99,21 @@ with col3:
 st.markdown("---")
 
 # Visualisierung / Erklärung der 3 Säulen
-st.subheader("💡 Einfluss der 3 ALARA-Säulen in deinem Szenario:")
+st.subheader("💡 Einfluss der 3 ALARA-Säulen in Ihrem Szenario:")
 
 col_a, col_b, col_c = st.columns(3)
 
 with col_a:
     st.markdown("### ⏱️ Time (Zeit)")
     st.write(
-        f"Die Dosis wächst **linear** mit der Zeit. Bei doppelter Dauer ({zeit*2:.1f}h) verdoppelt sich die Dosis."
+        f"Die Dosis wächst **linear** mit der Zeit. Bei doppelter Dauer ({zeit*2:.1f}h) verdoppelt sich Ihre Dosis."
     )
 
 with col_b:
     st.markdown("### 📏 Distance (Abstand)")
     st.write(
         "Das **Abstandsgesetz ($I \propto 1/r^2$)** greift stark[cite: 1]. "
-        f"Durch den Abstand von {abstand}m wird die Strahlung um den Faktor `{faktor_abstand:.2f}` skaliert."
+        f"Durch Ihren gewählten Abstand von {abstand}m wird die Strahlung um den Faktor `{faktor_abstand:.2f}` skaliert."
     )
 
 with col_c:
@@ -130,7 +125,7 @@ with col_c:
     )
     st.write(f"Aktiver Schutz: **{schütz_status}**")
     st.write(
-        f"Resttransmission durch Schicht: `{faktor_schuerze * faktor_wand * 100:.1f}%`"
+        f"Resttransmission durch Ihre Schutzschicht: `{faktor_schuerze * faktor_wand * 100:.1f}%`"
     )
 
 # Kleiner Zusatz-Plot für das Abstandsgesetz
