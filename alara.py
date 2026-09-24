@@ -81,13 +81,39 @@ st.markdown("---")
 _, _, col_center, _, _ = st.columns([1, 1, 2, 1, 1])
 
 with col_center:
-    # Dynamische farbige Box je nach Dosis-Höhe
+    # Einheitliche Boxen für alle Status-Stufen
     if gesamtdosis < 1.0:
-        st.success(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.1f} mSv**\n*Geringe Exposition (Normalbereich)*")
+        # Grün (Normalbereich)
+        st.markdown(f"""
+            <div style="
+                background-color: #e8f5e9; 
+                border: 2px solid #4caf50; 
+                padding: 15px; 
+                border-radius: 10px; 
+                text-align: center; 
+                color: #2e7d32;">
+                <h3 style="margin: 0; color: #2e7d32;">📊 Resultierende Dosis</h3>
+                <h1 style="margin: 10px 0; color: #2e7d32;"><b>{gesamtdosis:.1f} mSv</b></h1>
+                <p style="margin: 0; font-style: italic;">Geringe Exposition (Normalbereich)</p>
+            </div>
+        """, unsafe_allow_html=True)
     elif gesamtdosis < 6.0:
-        st.warning(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.1f} mSv**\n*Erhöhte Exposition (Überwachungsbereich)*")
+        # Gelb (Überwachungsbereich)
+        st.markdown(f"""
+            <div style="
+                background-color: #fffde7; 
+                border: 2px solid #fbc02d; 
+                padding: 15px; 
+                border-radius: 10px; 
+                text-align: center; 
+                color: #f57f17;">
+                <h3 style="margin: 0; color: #f57f17;">📊 Resultierende Dosis</h3>
+                <h1 style="margin: 10px 0; color: #f57f17;"><b>{gesamtdosis:.1f} mSv</b></h1>
+                <p style="margin: 0; font-style: italic;">Erhöhte Exposition (Überwachungsbereich)</p>
+            </div>
+        """, unsafe_allow_html=True)
     elif gesamtdosis < 20.0:
-        # Benutzerdefinierte orange Box für den Kontrollbereich
+        # Orange (Kontrollbereich)
         st.markdown(f"""
             <div style="
                 background-color: #fff3e0; 
@@ -102,7 +128,20 @@ with col_center:
             </div>
         """, unsafe_allow_html=True)
     else:
-        st.error(f"### 📊 Resultierende Dosis\n# **{gesamtdosis:.1f} mSv**\n*Kritische Dosis! Grenzwert überschritten!*")
+        # Rot (Kritisch)
+        st.markdown(f"""
+            <div style="
+                background-color: #ffebee; 
+                border: 2px solid #f44336; 
+                padding: 15px; 
+                border-radius: 10px; 
+                text-align: center; 
+                color: #c62828;">
+                <h3 style="margin: 0; color: #c62828;">📊 Resultierende Dosis</h3>
+                <h1 style="margin: 10px 0; color: #c62828;"><b>{gesamtdosis:.1f} mSv</b></h1>
+                <p style="margin: 0; font-style: italic;">Kritische Dosis! Grenzwert überschritten!</p>
+            </div>
+        """, unsafe_allow_html=True)
 
 st.markdown("---")
 
