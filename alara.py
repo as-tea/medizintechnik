@@ -8,8 +8,8 @@ st.set_page_config(
 
 st.title("☢️ ALARA-Strahlenschutz-Applet")
 st.markdown("""
-Dieses Applet demonstriert das **ALARA-Prinzip** (*As Low As Reasonably Achievable* – So viel wie nötig, so wenig wie möglich)[cite: 1]. 
-Sie können die Parameter über die Schieberegler und Schalter verändern, um die resultierende Dosis live zu beobachten!
+Dieses Applet demonstriert das **ALARA-Prinzip** (As Low As Reasonably Achievable – So viel wie nötig, so wenig wie möglich). 
+Sie können die Parameter über die Schieberegler und Schalter verändern, um die resultierende Dosis live zu beobachten.
 """)
 
 # Sidebar für die Eingabeparameter
@@ -17,16 +17,24 @@ st.sidebar.header("🎛️ Applet-Steuerung (ALARA)")
 
 # 1. Basis-Dosisrate der Strahlenquelle
 basis_dosisrate = st.sidebar.slider(
-    "Basis-Dosisrate der Quelle [mSv/h]",
+    "Basis-Dosisrate der Quelle (mSv/h)",
     min_value=1.0,
-    max_value=100.0,
+    max_value=50.0,
     value=20.0,
     step=1.0,
 )
 
+st.sidebar.markdown("---")
+with st.sidebar.expander("ℹ️ Übliche Dosisraten im Feld"):
+    st.markdown("""
+    * **Interventionell (C-Bogen):** ~1 bis 10 mSv/h (Streudosis ungeschützt)
+    * **Nuklearmedizin (Heißlabor):** Oft bis zu einigen mSv/h an Quellen
+    * **Diagnostik (geschützt):** < 0,01 bis < 1 mSv/h
+    """)
+
 # 2. Aufenthaltsdauer (Time)
 zeit = st.sidebar.slider(
-    "⏱️ Aufenthaltsdauer (t) [Stunden]",
+    "⏱️ Aufenthaltsdauer (t in Stunden)",
     min_value=0.1,
     max_value=10.0,
     value=1.0,
@@ -35,7 +43,7 @@ zeit = st.sidebar.slider(
 
 # 3. Abstand (Distance)
 abstand = st.sidebar.slider(
-    "📏 Abstand zur Quelle (r) [Meter]",
+    "📏 Abstand zur Quelle (r in Meter)",
     min_value=0.5,
     max_value=5.0,
     value=1.0,
