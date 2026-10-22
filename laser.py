@@ -23,6 +23,7 @@ with st.expander("📋 Interaktive Arbeitsaufgaben (Lernpfad einblenden)", expan
     - **3. Gefäßselektivität:** Wählen Sie den grün/blauen Bereich ($510 - 532\\text{ nm}$). Welches Zielgewebe absorbiert hier stark?
     - **4. Der Fokus-Hebel (Leistungsdichte):** Variieren Sie im thermischen Bereich gezielt die Leistungsdichte. Beobachten Sie im Diagramm, wie sich die Wechselwirkung ändert.
     - **5. Bindungsbruch ohne Hitze:** Stellen Sie den UV-Bereich ($193\\text{ nm}$) bei extrem kurzen Pulsen ein. Welcher Mechanismus greift hier?
+    - **6. Laserarten:** Welchen Lasertypen entsprechen die Einstellungen aus den Aufgaben 1.-5.?
     """)
 
 # --- SIDEBAR FÜR DIE MANUELLEN EINGABEPARAMETER ---
